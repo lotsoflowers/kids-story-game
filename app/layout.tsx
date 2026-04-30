@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { Sky } from "./components/Sky";
 import { ShootingStarProvider } from "./components/ShootingStar";
+import { Clock } from "./components/Clock";
 import { ThemeProvider, THEME_BOOTSTRAP_SCRIPT } from "@/lib/theme";
 
 export const metadata: Metadata = {
@@ -29,6 +30,7 @@ export default function RootLayout({
         <ThemeProvider>
           <Sky />
           <ShootingStarProvider>{children}</ShootingStarProvider>
+          <Clock />
         </ThemeProvider>
       </body>
     </html>

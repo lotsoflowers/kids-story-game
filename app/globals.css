@@ -305,7 +305,7 @@ button {
   z-index: 2;
   max-width: 980px;
   margin: 0 auto;
-  padding: 16px 20px 64px;
+  padding: 16px 20px 110px; /* extra bottom room for the fixed Clock */
 }
 
 .top-bar {
@@ -370,6 +370,80 @@ button {
 [data-theme="night"] .theme-toggle .icon-moon { opacity: 1; transform: rotate(0)        scale(1); }
 [data-theme="day"]   .theme-toggle .icon-sun  { opacity: 1; transform: rotate(0)        scale(1); }
 [data-theme="day"]   .theme-toggle .icon-moon { opacity: 0; transform: rotate(180deg)   scale(0.3); position: absolute; }
+
+/* Auto mode: stack mini sun + moon together so it reads as "auto". */
+.icon-auto {
+  position: relative;
+  display: inline-block;
+  width: 1.6em;
+  height: 1.6em;
+}
+
+.icon-auto-sun,
+.icon-auto-moon {
+  position: absolute;
+  font-size: 0.95em;
+  line-height: 1;
+}
+
+.icon-auto-sun {
+  top: -2px;
+  left: -2px;
+}
+
+.icon-auto-moon {
+  bottom: -2px;
+  right: -2px;
+}
+
+.theme-toggle.mode-auto .icon-moon,
+.theme-toggle.mode-auto .icon-sun {
+  display: none;
+}
+
+/* ============================================================
+   Clock — fixed bottom-center, ticks every second
+   ============================================================ */
+
+.clock {
+  position: fixed;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 3;
+  background: var(--card-bg);
+  border-radius: 999px;
+  padding: 8px 18px;
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  font-family: inherit;
+  font-weight: 700;
+  color: var(--on-card);
+  box-shadow: 0 4px 0 rgba(26, 58, 71, 0.18), 0 0 24px var(--orb-shadow-1);
+  font-variant-numeric: tabular-nums;
+  transition: background 1s ease, box-shadow 1s ease;
+  pointer-events: none;
+  user-select: none;
+}
+
+.clock-icon {
+  font-size: 1.2rem;
+  line-height: 1;
+}
+
+.clock-time {
+  font-size: 1.15rem;
+  letter-spacing: 0.5px;
+  color: var(--teal-deep);
+}
+
+.clock-date {
+  font-size: 0.9rem;
+  color: rgba(95, 165, 186, 0.85);
+  border-inline-start: 2px solid rgba(95, 165, 186, 0.3);
+  padding-inline-start: 12px;
+}
 
 /* ============================================================
    Library button (top-bar) + library list view
@@ -525,20 +599,61 @@ button {
   max-width: 620px;
 }
 
+.friend {
+  position: relative;
+  width: 200px;
+  height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: friend-bob 4s ease-in-out infinite;
+}
+
+.friend-sparkles {
+  position: absolute;
+  inset: -10px;
+  pointer-events: none;
+}
+
+.sparkle {
+  position: absolute;
+  color: var(--yellow);
+  font-size: 18px;
+  opacity: 0;
+  animation: sparkle 3.5s ease-in-out infinite;
+  filter: drop-shadow(0 0 6px rgba(248, 215, 65, 0.7));
+}
+
+.sparkle-1 { top: -2%;  left: 20%;  animation-delay: 0s; }
+.sparkle-2 { top: 12%;  right: -4%; animation-delay: 0.7s; font-size: 14px; }
+.sparkle-3 { bottom: 8%; left: -4%; animation-delay: 1.4s; font-size: 22px; }
+.sparkle-4 { bottom: -2%; right: 22%; animation-delay: 2.1s; }
+.sparkle-5 { top: 38%;  left: -8%; animation-delay: 2.8s; font-size: 12px; }
+
+@keyframes sparkle {
+  0%, 100% { opacity: 0; transform: scale(0.5) rotate(0deg); }
+  50%      { opacity: 1; transform: scale(1.2) rotate(45deg); }
+}
+
 .friend-orb {
   position: relative;
-  width: 160px;
-  height: 160px;
+  width: 170px;
+  height: 170px;
   border-radius: 50%;
-  background: var(--orb-color);
+  background: radial-gradient(
+    circle at 30% 30%,
+    color-mix(in srgb, var(--orb-color) 80%, white 20%),
+    var(--orb-color) 70%,
+    color-mix(in srgb, var(--orb-color) 70%, black 8%) 100%
+  );
   box-shadow:
-    inset -14px -16px 0 rgba(0, 0, 0, 0.08),
+    inset -10px -14px 0 rgba(0, 0, 0, 0.08),
+    inset 10px 12px 0 rgba(255, 255, 255, 0.18),
     0 0 80px var(--orb-shadow-1),
     0 0 140px var(--orb-shadow-2);
   display: flex;
   align-items: center;
   justify-content: center;
-  animation: friend-bob 4s ease-in-out infinite;
   transition: background 1.6s ease, box-shadow 1.6s ease;
 }
 
@@ -549,28 +664,45 @@ button {
 
 .friend-orb-glow {
   position: absolute;
-  inset: -40px;
+  inset: -35px;
   border-radius: 50%;
   background: radial-gradient(circle, var(--sky-glow), transparent 70%);
   animation: orb-glow 6s ease-in-out infinite;
   pointer-events: none;
 }
 
-.friend-face {
+.friend-face-svg {
   position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 22px;
   width: 100%;
+  height: 100%;
 }
 
-.friend-eye {
-  width: 14px;
-  height: 18px;
-  border-radius: 50%;
-  background: var(--on-card);
+.friend-cheek {
+  fill: rgba(254, 111, 163, 0.55);
+}
+
+[data-theme="day"] .friend-cheek {
+  fill: rgba(232, 90, 80, 0.45);
+}
+
+.friend-eye-pupil {
+  fill: #1a3a47;
   animation: friend-blink 5s ease-in-out infinite;
+  transform-origin: center;
+  transform-box: fill-box;
+}
+
+.friend-eye-shine {
+  fill: white;
+}
+
+.friend-eye-shine-small {
+  fill: white;
+  opacity: 0.7;
+}
+
+.friend-eye-group.squint .friend-eye-pupil {
+  transform: scaleY(0.3);
 }
 
 @keyframes friend-blink {
@@ -578,17 +710,14 @@ button {
   94%, 96%      { transform: scaleY(0.1); }
 }
 
-.friend-mouth {
-  position: absolute;
-  bottom: 30px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 28px;
-  height: 16px;
-  border: 4px solid var(--on-card);
-  border-top: none;
-  border-radius: 0 0 28px 28px;
-  background: transparent;
+.friend-mouth-curve {
+  stroke: #1a3a47;
+  stroke-width: 5;
+  fill: none;
+}
+
+.friend-mouth-o {
+  fill: #1a3a47;
 }
 
 .friend-bubble {
