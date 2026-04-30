@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "OPENROUTER_API_KEY is not set" }, { status: 500 });
   }
 
-  const model = process.env.OPENROUTER_STORY_MODEL || "anthropic/claude-haiku-4-5";
+  const model = process.env.OPENROUTER_STORY_MODEL || "google/gemini-2.5-pro";
 
   let body: { idea?: string; selections?: Selections };
   try {
@@ -71,7 +71,7 @@ export async function POST(req: NextRequest) {
       ],
       response_format: { type: "json_object" },
       temperature: 0.85,
-      max_tokens: 1200,
+      max_tokens: 4000,
     }),
   });
 
@@ -90,15 +90,28 @@ export async function POST(req: NextRequest) {
   try {
     parsed = JSON.parse(content);
   } catch {
-    // Some models occasionally wrap JSON in code fences. Try to recover.
-    const match = content.match(/\{[\s\S]*\}/);
-    if (!match) {
-      return NextResponse.json(
-        { error: "Model did not return JSON", raw: content.slice(0, 500) },
-        { status: 502 },
-      );
+    // Strip ```json ... ``` fences some models add even when asked for raw JSON.
+    const stripped = content.replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/i, "");
+    try {
+      parsed = JSON.parse(stripped);
+    } catch {
+      // Last resort: grab the largest balanced-ish object substring.
+      const match = stripped.match(/\{[\s\S]*\}/);
+      if (!match) {
+        return NextResponse.json(
+          { error: "Model did not return JSON", raw: content.slice(0, 1500) },
+          { status: 502 },
+        );
+      }
+      try {
+        parsed = JSON.parse(match[0]);
+      } catch {
+        return NextResponse.json(
+          { error: "Model returned malformed JSON", raw: content.slice(0, 1500) },
+          { status: 502 },
+        );
+      }
     }
-    parsed = JSON.parse(match[0]);
   }
 
   if (!parsed.paragraphs || !Array.isArray(parsed.paragraphs) || parsed.paragraphs.length === 0) {
