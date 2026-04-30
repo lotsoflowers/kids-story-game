@@ -53,14 +53,11 @@ const clouds = [
 ];
 
 export function Sky() {
+  // Note: no moon or sun in the sky — the mascot below the title is
+  // both, depending on theme. Putting another orb up here would just
+  // duplicate the visual.
   return (
     <div className="sky" aria-hidden>
-      <div className="moon">
-        <div className="moon-glow" />
-      </div>
-      <div className="sun">
-        <div className="sun-rays" />
-      </div>
       {stars.map((s, i) => (
         <span
           key={i}

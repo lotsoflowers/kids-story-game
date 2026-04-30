@@ -40,8 +40,6 @@
 
   --cloud-tint: rgba(254, 180, 179, 0.18);
   --star-opacity: 1;
-  --moon-opacity: 1;
-  --sun-opacity: 0;
 }
 
 /* ---- DAY ---- */
@@ -63,8 +61,6 @@
 
   --cloud-tint: rgba(255, 255, 255, 0.7);
   --star-opacity: 0;
-  --moon-opacity: 0;
-  --sun-opacity: 1;
 }
 
 /* ============================================================
@@ -118,79 +114,6 @@ button {
     );
   overflow: hidden;
   transition: background 2.2s ease;
-}
-
-/* Moon — visible at night, hidden in day */
-.moon {
-  position: absolute;
-  top: 6%;
-  inset-inline-end: 8%;
-  width: 100px;
-  height: 100px;
-  border-radius: 50%;
-  background: var(--pale-pink);
-  box-shadow:
-    inset -8px -10px 0 rgba(254, 180, 179, 0.35),
-    0 0 60px var(--orb-shadow-1);
-  opacity: var(--moon-opacity);
-  transform: scale(var(--moon-opacity));
-  transition: opacity 1.6s ease, transform 1.6s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-.moon-glow {
-  position: absolute;
-  inset: -32px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(254, 225, 223, 0.4), transparent 70%);
-  animation: orb-glow 6s ease-in-out infinite;
-}
-
-/* Sun — visible in day, hidden at night */
-.sun {
-  position: absolute;
-  top: 6%;
-  inset-inline-end: 8%;
-  width: 110px;
-  height: 110px;
-  border-radius: 50%;
-  background: var(--yellow);
-  box-shadow:
-    inset -8px -10px 0 rgba(232, 180, 25, 0.35),
-    0 0 80px rgba(248, 215, 65, 0.7),
-    0 0 160px rgba(248, 215, 65, 0.4);
-  opacity: var(--sun-opacity);
-  transform: scale(var(--sun-opacity));
-  transition: opacity 1.6s ease, transform 1.6s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-.sun-rays {
-  position: absolute;
-  inset: -50px;
-  border-radius: 50%;
-  background: conic-gradient(
-    from 0deg,
-    rgba(248, 215, 65, 0.4),
-    transparent 8%,
-    rgba(248, 215, 65, 0.4) 12%,
-    transparent 20%,
-    rgba(248, 215, 65, 0.4) 24%,
-    transparent 32%,
-    rgba(248, 215, 65, 0.4) 36%,
-    transparent 44%,
-    rgba(248, 215, 65, 0.4) 48%,
-    transparent 56%,
-    rgba(248, 215, 65, 0.4) 60%,
-    transparent 68%,
-    rgba(248, 215, 65, 0.4) 72%,
-    transparent 80%,
-    rgba(248, 215, 65, 0.4) 84%,
-    transparent 92%,
-    rgba(248, 215, 65, 0.4) 96%,
-    transparent 100%
-  );
-  filter: blur(2px);
-  animation: spin 14s linear infinite;
-  pointer-events: none;
 }
 
 @keyframes orb-glow {
@@ -600,39 +523,20 @@ button {
 }
 
 /* ============================================================
-   Friend mascot — chibi storyteller character.
-   Color tokens shift with the theme so the same character looks
-   like a magical pink-glowing kid at night and a warm sun-glowing
-   kid by day.
+   Friend mascot — moon-face at night, sun-face by day.
+   The orb is the moon/sun: there is no separate moon/sun in the
+   sky background. The orb's color comes from --orb-color which
+   the theme tokens swap (pink-pale at night, yellow by day).
    ============================================================ */
-
-[data-theme="night"] {
-  --friend-skin: #fee1df;          /* pale pink at night */
-  --friend-skin-light: #fff4f3;    /* highlight on the head */
-  --friend-body-1: #5a8da3;        /* navy-leaning teal sweater top */
-  --friend-body-2: #2c5867;        /* darker shadow at the bottom */
-  --friend-collar: rgba(255, 255, 255, 0.22);
-}
-
-[data-theme="day"] {
-  --friend-skin: #f8d741;          /* warm yellow by day */
-  --friend-skin-light: #fff1a8;    /* sun highlight */
-  --friend-body-1: #feb4b3;        /* coral sweater top */
-  --friend-body-2: #d8716f;        /* darker shadow at bottom */
-  --friend-collar: rgba(255, 255, 255, 0.4);
-}
 
 .friend {
   position: relative;
-  width: 220px;
-  height: 280px;
+  width: 200px;
+  height: 200px;
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: center;
   animation: friend-bob 4s ease-in-out infinite;
-  filter: drop-shadow(0 8px 0 rgba(26, 58, 71, 0.18))
-    drop-shadow(0 0 40px var(--orb-shadow-1));
-  transition: filter 1.6s ease;
 }
 
 @keyframes friend-bob {
@@ -642,7 +546,7 @@ button {
 
 .friend-sparkles {
   position: absolute;
-  inset: -10px -10px 60px -10px;
+  inset: -10px;
   pointer-events: none;
 }
 
@@ -655,55 +559,60 @@ button {
   filter: drop-shadow(0 0 6px rgba(248, 215, 65, 0.7));
 }
 
-.sparkle-1 { top: 0%;  left: 18%;  animation-delay: 0s; }
-.sparkle-2 { top: 14%; right: -4%; animation-delay: 0.7s; font-size: 14px; }
-.sparkle-3 { top: 30%; left: -6%;  animation-delay: 1.4s; font-size: 22px; }
-.sparkle-4 { top: 8%;  right: 24%; animation-delay: 2.1s; }
-.sparkle-5 { top: 44%; left: -10%; animation-delay: 2.8s; font-size: 12px; }
+.sparkle-1 { top: -2%;  left: 20%;  animation-delay: 0s; }
+.sparkle-2 { top: 12%;  right: -4%; animation-delay: 0.7s; font-size: 14px; }
+.sparkle-3 { bottom: 8%; left: -4%; animation-delay: 1.4s; font-size: 22px; }
+.sparkle-4 { bottom: -2%; right: 22%; animation-delay: 2.1s; }
+.sparkle-5 { top: 38%;  left: -8%; animation-delay: 2.8s; font-size: 12px; }
 
 @keyframes sparkle {
   0%, 100% { opacity: 0; transform: scale(0.5) rotate(0deg); }
   50%      { opacity: 1; transform: scale(1.2) rotate(45deg); }
 }
 
-/* Halo of light around the head only — sits behind the SVG. */
-.friend-glow {
+.friend-orb {
+  position: relative;
+  width: 170px;
+  height: 170px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 30% 30%,
+    color-mix(in srgb, var(--orb-color) 80%, white 20%),
+    var(--orb-color) 70%,
+    color-mix(in srgb, var(--orb-color) 70%, black 8%) 100%
+  );
+  box-shadow:
+    inset -10px -14px 0 rgba(0, 0, 0, 0.08),
+    inset 10px 12px 0 rgba(255, 255, 255, 0.18),
+    0 0 80px var(--orb-shadow-1),
+    0 0 140px var(--orb-shadow-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 1.6s ease, box-shadow 1.6s ease;
+}
+
+.friend-orb-glow {
   position: absolute;
-  top: -20px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 200px;
-  height: 200px;
+  inset: -35px;
   border-radius: 50%;
   background: radial-gradient(circle, var(--sky-glow), transparent 70%);
   animation: orb-glow 6s ease-in-out infinite;
   pointer-events: none;
 }
 
-.friend-svg {
+.friend-face-svg {
   position: relative;
   width: 100%;
   height: 100%;
-  z-index: 1;
 }
 
-/* Hair — dark navy, consistent in both themes. */
-.friend-hair {
-  fill: #2a1f3a;
-}
-
-/* Cheeks — softer in day mode (the yellow skin reads "warm" already). */
 .friend-cheek {
-  fill: rgba(254, 111, 163, 0.65);
+  fill: rgba(254, 111, 163, 0.55);
 }
 
 [data-theme="day"] .friend-cheek {
-  fill: rgba(232, 90, 80, 0.55);
-}
-
-/* The collar accent is a subtle highlight inside the body shape. */
-.friend-collar {
-  fill: var(--friend-collar);
+  fill: rgba(232, 90, 80, 0.45);
 }
 
 .friend-eye-pupil {
