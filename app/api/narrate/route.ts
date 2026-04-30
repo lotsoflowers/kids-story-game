@@ -3,13 +3,16 @@ import { NextRequest, NextResponse } from "next/server";
 export const runtime = "nodejs";
 
 export async function POST(req: NextRequest) {
-  const apiKey = process.env.ELEVENLABS_API_KEY;
+  const apiKey = process.env.MUNSIT_API_KEY;
   if (!apiKey) {
-    return NextResponse.json({ error: "ELEVENLABS_API_KEY is not set" }, { status: 500 });
+    return NextResponse.json({ error: "MUNSIT_API_KEY is not set" }, { status: 500 });
   }
 
-  const voiceId = process.env.ELEVENLABS_VOICE_ID || "EXAVITQu4vr4xnSDxMaL";
-  const modelId = process.env.ELEVENLABS_MODEL_ID || "eleven_multilingual_v2";
+  // Default voice "Arwa" — fusha (MSA) female. The faseeh-v1-preview
+  // model is the high-quality (non-streaming) variant, recommended for
+  // longer story narration where latency matters less than fidelity.
+  const voiceId = process.env.MUNSIT_VOICE_ID || "OUOdy43qiHKwzVLRScXFnUe8";
+  const modelId = process.env.MUNSIT_MODEL_ID || "faseeh-v1-preview";
 
   let body: { text?: string };
   try {
@@ -23,41 +26,37 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Missing text" }, { status: 400 });
   }
 
-  const elRes = await fetch(
-    `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}?output_format=mp3_44100_128`,
+  const munsitRes = await fetch(
+    `https://api.munsit.com/api/v1/text-to-speech/${encodeURIComponent(modelId)}`,
     {
       method: "POST",
       headers: {
-        "xi-api-key": apiKey,
+        "x-api-key": apiKey,
         "Content-Type": "application/json",
-        Accept: "audio/mpeg",
       },
       body: JSON.stringify({
+        voice_id: voiceId,
         text,
-        model_id: modelId,
-        voice_settings: {
-          stability: 0.5,
-          similarity_boost: 0.75,
-          style: 0.3,
-          use_speaker_boost: true,
-        },
+        stability: 0.5,
+        speed: 0.95,
+        streaming: false,
       }),
     },
   );
 
-  if (!elRes.ok) {
-    const detail = await elRes.text();
+  if (!munsitRes.ok) {
+    const detail = await munsitRes.text();
     return NextResponse.json(
-      { error: "ElevenLabs request failed", status: elRes.status, detail },
+      { error: "Munsit request failed", status: munsitRes.status, detail },
       { status: 502 },
     );
   }
 
-  const audioBuffer = await elRes.arrayBuffer();
+  const audioBuffer = await munsitRes.arrayBuffer();
   return new NextResponse(audioBuffer, {
     status: 200,
     headers: {
-      "Content-Type": "audio/mpeg",
+      "Content-Type": "audio/wav",
       "Cache-Control": "no-store",
     },
   });
