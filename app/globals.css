@@ -427,7 +427,7 @@ button {
 
 .library-card-cover {
   width: 100%;
-  aspect-ratio: 16 / 10;
+  aspect-ratio: 4 / 3;
   background: linear-gradient(135deg, var(--coral), var(--pale-pink));
   display: flex;
   align-items: center;
@@ -887,10 +887,15 @@ button {
 
 .cover {
   width: 100%;
-  aspect-ratio: 16 / 10;
+  /* 4:3 — classic kids' book-cover aspect. Wider feels stretched
+     (characters elongate at flux's higher-aspect generations); square
+     feels cramped for multi-character scenes. 4:3 splits the
+     difference. */
+  aspect-ratio: 4 / 3;
+  max-width: 640px;
+  margin: 0 auto 22px;
   border-radius: 28px;
   overflow: hidden;
-  margin: 0 0 22px;
   background: linear-gradient(135deg, var(--coral), var(--pale-pink));
   box-shadow: var(--card-shadow);
   display: flex;

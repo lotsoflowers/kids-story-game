@@ -117,7 +117,7 @@ export default function Home() {
         ? `Children's storybook illustration. Soft, warm, friendly cartoon style. Bright colors, gentle shapes. No text, letters, or words anywhere in the image. Subject: ${data.imagePrompt}`
         : "";
       const pollinationsUrl = styledPrompt
-        ? `https://image.pollinations.ai/prompt/${encodeURIComponent(styledPrompt)}?width=1024&height=640&model=flux&nologo=true`
+        ? `https://image.pollinations.ai/prompt/${encodeURIComponent(styledPrompt)}?width=1024&height=768&model=flux&nologo=true`
         : null;
 
       // Save to local library immediately with the URL baked in.
