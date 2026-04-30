@@ -6,6 +6,7 @@ import { StepPicker } from "./components/StepPicker";
 import { StoryDisplay } from "./components/StoryDisplay";
 import { IdeaInput } from "./components/IdeaInput";
 import { LoadingScreen } from "./components/LoadingScreen";
+import { useShootingStar } from "./components/ShootingStar";
 
 type Phase = "pick" | "idea" | "loading" | "story" | "error";
 
@@ -25,6 +26,8 @@ export default function Home() {
   const [imageLoading, setImageLoading] = useState(false);
   const [imageError, setImageError] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const triggerShootingStar = useShootingStar();
 
   const totalSteps = steps.length;
   const currentStep = steps[stepIndex];
@@ -74,6 +77,7 @@ export default function Home() {
     setStory(null);
     setImageUrl(null);
     setImageError(null);
+    triggerShootingStar();
 
     try {
       const selectionLabels = Object.fromEntries(
@@ -94,6 +98,9 @@ export default function Home() {
       const data: GeneratedStory = await res.json();
       setStory(data);
       setPhase("story");
+      triggerShootingStar();
+      // A second shooting star after a beat for a "wow" reveal moment.
+      setTimeout(() => triggerShootingStar(), 600);
 
       // Kick off image gen in the background — story renders without it.
       if (data.imagePrompt) {

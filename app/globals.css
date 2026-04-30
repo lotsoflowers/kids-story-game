@@ -1,15 +1,37 @@
+/* ============================================================
+   Kids Story Builder — Night Sky theme
+   Palette is tightly constrained to the 6 user-supplied tokens
+   plus two darker derivations of #5FA5BA used only for the sky
+   gradient depth at the very top of the viewport.
+   ============================================================ */
+
 :root {
-  --bg: #fff7ed;
-  --bg-grad-1: #ffe4e6;
-  --bg-grad-2: #dbeafe;
-  --ink: #2b2440;
-  --ink-soft: #6b6386;
-  --accent: #ff6fa3;
-  --accent-soft: #ffd5e3;
-  --card: #ffffff;
-  --card-shadow: 0 8px 0 rgba(43, 36, 64, 0.08);
-  --card-shadow-hover: 0 14px 0 rgba(43, 36, 64, 0.12);
-  --ring: #ffb84d;
+  /* Palette */
+  --pale-pink: #fee1df;
+  --coral: #feb4b3;
+  --yellow: #f8d741;
+  --soft-green: #e8ec8c;
+  --teal-light: #aadfe1;
+  --teal-deep: #5fa5ba;
+
+  /* Sky depth — derived from teal-deep, darker for the top of the
+     viewport so it reads "deep night" while the horizon stays in
+     the user's palette. */
+  --sky-darkest: #1a3a47;
+  --sky-deeper: #2c5867;
+
+  /* Text on dark sky */
+  --moonlight: #ffffff;
+  --on-sky-soft: #fee1df;
+  --on-sky-mute: #aadfe1;
+
+  /* Text on pastel cards */
+  --on-card: #1a3a47;
+  --on-card-soft: #5fa5ba;
+
+  /* Shadows tuned for warm cards over deep sky */
+  --card-shadow: 0 6px 0 rgba(26, 58, 71, 0.18), 0 12px 24px rgba(0, 0, 0, 0.18);
+  --card-shadow-hover: 0 10px 0 rgba(26, 58, 71, 0.22), 0 18px 32px rgba(0, 0, 0, 0.22);
 }
 
 * {
@@ -21,14 +43,12 @@ body {
   margin: 0;
   padding: 0;
   min-height: 100%;
-  background:
-    radial-gradient(circle at 15% 10%, var(--bg-grad-1), transparent 55%),
-    radial-gradient(circle at 85% 90%, var(--bg-grad-2), transparent 55%),
-    var(--bg);
-  color: var(--ink);
-  font-family: "Comic Sans MS", "Chalkboard SE", "Comic Neue", "Trebuchet MS",
-    system-ui, sans-serif;
+  color: var(--moonlight);
+  font-family: "Fredoka", "Comic Sans MS", "Trebuchet MS", system-ui, sans-serif;
+  font-weight: 500;
   -webkit-font-smoothing: antialiased;
+  background: var(--sky-darkest);
+  overflow-x: hidden;
 }
 
 button {
@@ -36,55 +56,254 @@ button {
   cursor: pointer;
 }
 
+/* ============================================================
+   Night sky background — fixed, behind all content
+   ============================================================ */
+
+.night-sky {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 90% 60% at 50% 100%, rgba(170, 223, 225, 0.35), transparent 70%),
+    linear-gradient(
+      to bottom,
+      var(--sky-darkest) 0%,
+      var(--sky-deeper) 35%,
+      var(--teal-deep) 75%,
+      var(--teal-light) 100%
+    );
+  overflow: hidden;
+}
+
+.moon {
+  position: absolute;
+  top: 6%;
+  right: 8%;
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  background: var(--pale-pink);
+  box-shadow:
+    inset -8px -10px 0 rgba(254, 180, 179, 0.35),
+    0 0 60px rgba(254, 225, 223, 0.55);
+}
+
+.moon-glow {
+  position: absolute;
+  inset: -30px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(254, 225, 223, 0.35), transparent 70%);
+  animation: moon-glow 6s ease-in-out infinite;
+}
+
+@keyframes moon-glow {
+  0%, 100% {
+    opacity: 0.6;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.95;
+    transform: scale(1.08);
+  }
+}
+
+.star {
+  position: absolute;
+  border-radius: 50%;
+  animation: twinkle 3s ease-in-out infinite;
+}
+
+.star-yellow {
+  background: var(--yellow);
+  box-shadow: 0 0 6px var(--yellow);
+}
+
+.star-white {
+  background: var(--moonlight);
+  box-shadow: 0 0 4px rgba(255, 255, 255, 0.7);
+}
+
+@keyframes twinkle {
+  0%, 100% {
+    opacity: 0.3;
+    transform: scale(0.8);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
+}
+
+.cloud {
+  position: absolute;
+  width: 180px;
+  height: 60px;
+  background: rgba(254, 180, 179, 0.18);
+  border-radius: 60px;
+  filter: blur(12px);
+  animation: drift linear infinite;
+}
+
+.cloud::before,
+.cloud::after {
+  content: "";
+  position: absolute;
+  background: rgba(254, 180, 179, 0.18);
+  border-radius: 50%;
+  filter: blur(4px);
+}
+
+.cloud::before {
+  width: 80px;
+  height: 80px;
+  top: -28px;
+  left: 30px;
+}
+
+.cloud::after {
+  width: 90px;
+  height: 90px;
+  top: -24px;
+  right: 30px;
+}
+
+@keyframes drift {
+  from {
+    transform: translateX(-220px) scale(var(--cloud-scale, 1));
+    left: 0;
+  }
+  to {
+    transform: translateX(calc(100vw + 200px)) scale(var(--cloud-scale, 1));
+    left: 0;
+  }
+}
+
+/* ============================================================
+   Shooting star layer — sits above the sky, below content
+   ============================================================ */
+
+.shooting-star-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.shooting-star-wrapper {
+  position: absolute;
+  width: 0;
+  height: 0;
+}
+
+.shooting-star {
+  width: 110px;
+  height: 3px;
+  background: linear-gradient(to right, transparent, rgba(248, 215, 65, 0.4), var(--yellow));
+  border-radius: 3px;
+  position: relative;
+  animation: shoot 1.6s cubic-bezier(0.3, 0.7, 0.3, 1) forwards;
+}
+
+.shooting-star::after {
+  content: "";
+  position: absolute;
+  right: -4px;
+  top: -4px;
+  width: 11px;
+  height: 11px;
+  background: var(--yellow);
+  border-radius: 50%;
+  box-shadow: 0 0 16px 4px rgba(248, 215, 65, 0.85);
+}
+
+@keyframes shoot {
+  0% {
+    transform: translateX(0);
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  85% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(700px);
+    opacity: 0;
+  }
+}
+
+/* ============================================================
+   App layout
+   ============================================================ */
+
 .app {
-  max-width: 960px;
+  position: relative;
+  z-index: 2;
+  max-width: 980px;
   margin: 0 auto;
   padding: 32px 20px 64px;
 }
 
 .title {
   text-align: center;
-  font-size: clamp(2rem, 5vw, 3.2rem);
+  font-size: clamp(2rem, 5vw, 3.4rem);
+  font-weight: 700;
   margin: 8px 0 4px;
   letter-spacing: -0.5px;
+  color: var(--moonlight);
+  text-shadow: 0 0 24px rgba(254, 225, 223, 0.4);
 }
 
 .subtitle {
   text-align: center;
-  color: var(--ink-soft);
+  color: var(--on-sky-soft);
   font-size: 1.1rem;
+  font-weight: 500;
   margin: 0 0 28px;
 }
 
+/* Progress dots */
 .progress {
   display: flex;
-  gap: 8px;
+  gap: 10px;
   justify-content: center;
-  margin-bottom: 24px;
+  margin-bottom: 28px;
 }
 
 .progress-dot {
   width: 14px;
   height: 14px;
   border-radius: 50%;
-  background: #f0e7ee;
-  transition: transform 0.2s, background 0.2s;
+  background: rgba(170, 223, 225, 0.3);
+  transition: transform 0.2s, background 0.2s, box-shadow 0.2s;
 }
 
 .progress-dot.active {
-  background: var(--accent);
-  transform: scale(1.3);
+  background: var(--yellow);
+  box-shadow: 0 0 12px rgba(248, 215, 65, 0.7);
+  transform: scale(1.4);
 }
 
 .progress-dot.done {
-  background: #ffb84d;
+  background: var(--coral);
+  box-shadow: 0 0 8px rgba(254, 180, 179, 0.5);
 }
 
 .step-question {
   text-align: center;
-  font-size: clamp(1.6rem, 4vw, 2.2rem);
+  font-size: clamp(1.6rem, 4vw, 2.4rem);
+  font-weight: 700;
   margin: 8px 0 24px;
+  color: var(--moonlight);
 }
+
+/* ============================================================
+   Choice cards — rotate through 3 warm palette colors
+   ============================================================ */
 
 .choice-grid {
   display: grid;
@@ -93,64 +312,203 @@ button {
 }
 
 .choice-card {
-  background: var(--card);
-  border: 4px solid transparent;
-  border-radius: 24px;
-  padding: 22px 12px 18px;
+  border: none;
+  border-radius: 28px;
+  padding: 24px 14px 20px;
   text-align: center;
   box-shadow: var(--card-shadow);
-  transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: var(--ink);
+  font-family: inherit;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--on-card);
+  background: var(--coral);
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1),
+    box-shadow 0.2s, filter 0.2s;
+}
+
+.choice-card:nth-child(3n + 1) {
+  background: var(--coral);
+}
+.choice-card:nth-child(3n + 2) {
+  background: var(--soft-green);
+}
+.choice-card:nth-child(3n + 3) {
+  background: var(--pale-pink);
 }
 
 .choice-card:hover,
 .choice-card:focus-visible {
-  transform: translateY(-4px);
+  transform: translateY(-6px) rotate(-1deg);
   box-shadow: var(--card-shadow-hover);
-  border-color: var(--ring);
   outline: none;
+  filter: brightness(1.05);
+}
+
+.choice-card:active {
+  transform: translateY(-2px) scale(0.97);
+}
+
+.choice-card.selected {
+  outline: 4px solid var(--yellow);
+  outline-offset: 4px;
+  filter: saturate(1.1);
 }
 
 .choice-card .emoji {
   display: block;
   font-size: 4rem;
   line-height: 1;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
+  filter: drop-shadow(0 4px 0 rgba(0, 0, 0, 0.1));
 }
 
-.choice-card.selected {
-  border-color: var(--accent);
-  background: var(--accent-soft);
+/* ============================================================
+   Buttons — primary (yellow moon) and secondary (coral)
+   ============================================================ */
+
+.btn {
+  border: none;
+  border-radius: 999px;
+  padding: 16px 32px;
+  font-family: inherit;
+  font-size: 1.2rem;
+  font-weight: 700;
+  background: var(--yellow);
+  color: var(--on-card);
+  box-shadow: 0 5px 0 #c8a818, 0 0 22px rgba(248, 215, 65, 0.45);
+  transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1),
+    box-shadow 0.15s, filter 0.2s;
 }
 
-.story {
-  background: var(--card);
-  border-radius: 28px;
-  padding: 32px clamp(20px, 5vw, 48px);
+.btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 0 #c8a818, 0 0 28px rgba(248, 215, 65, 0.6);
+  filter: brightness(1.05);
+}
+
+.btn:active {
+  transform: translateY(2px);
+  box-shadow: 0 2px 0 #c8a818, 0 0 16px rgba(248, 215, 65, 0.4);
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  filter: saturate(0.6);
+}
+
+.btn.secondary {
+  background: var(--coral);
+  box-shadow: 0 5px 0 #c8867f, 0 0 18px rgba(254, 180, 179, 0.35);
+}
+
+.btn.secondary:hover {
+  box-shadow: 0 8px 0 #c8867f, 0 0 24px rgba(254, 180, 179, 0.5);
+}
+
+.btn.secondary:active {
+  box-shadow: 0 2px 0 #c8867f, 0 0 12px rgba(254, 180, 179, 0.3);
+}
+
+.back-link {
+  display: inline-block;
+  background: none;
+  border: none;
+  color: var(--on-sky-soft);
+  font-family: inherit;
+  font-size: 1rem;
+  font-weight: 500;
+  margin-bottom: 12px;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.back-link:hover {
+  color: var(--moonlight);
+}
+
+/* ============================================================
+   Idea text box
+   ============================================================ */
+
+.idea-box {
+  width: 100%;
+  min-height: 150px;
+  border-radius: 24px;
+  border: 4px solid rgba(254, 225, 223, 0.4);
+  background: rgba(255, 255, 255, 0.95);
+  padding: 20px 22px;
+  font-family: inherit;
+  font-size: 1.15rem;
+  line-height: 1.6;
+  color: var(--on-card);
+  resize: vertical;
   box-shadow: var(--card-shadow);
-  font-size: 1.55rem;
-  line-height: 2;
-  font-family: "Cairo", "Noto Naskh Arabic", "Segoe UI", "Tahoma", sans-serif;
+  outline: none;
+  transition: border-color 0.15s, transform 0.15s;
 }
 
-.story[dir="rtl"] {
-  text-align: right;
+.idea-box:focus {
+  border-color: var(--yellow);
+  transform: translateY(-2px);
 }
 
-.story p {
-  margin: 0 0 18px;
+.idea-box::placeholder {
+  font-family: "Cairo", "Fredoka", sans-serif;
+  color: rgba(95, 165, 186, 0.7);
 }
 
-.story p:last-child {
-  margin-bottom: 0;
+/* ============================================================
+   Loading screen — pulsing pink moon
+   ============================================================ */
+
+.loading {
+  text-align: center;
+  padding: 80px 20px;
 }
 
-.story-title {
-  font-size: 2rem;
-  margin: 0 0 20px;
-  color: var(--accent);
+.loading-orb {
+  width: 140px;
+  height: 140px;
+  margin: 0 auto 28px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, var(--pale-pink), var(--coral));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 4.5rem;
+  animation: orb-pulse 2s ease-in-out infinite;
+  box-shadow: 0 0 60px rgba(254, 225, 223, 0.7), 0 0 120px rgba(254, 180, 179, 0.4);
+}
+
+@keyframes orb-pulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 60px rgba(254, 225, 223, 0.7), 0 0 120px rgba(254, 180, 179, 0.4);
+  }
+  50% {
+    transform: scale(1.1);
+    box-shadow: 0 0 90px rgba(254, 225, 223, 0.9), 0 0 160px rgba(254, 180, 179, 0.55);
+  }
+}
+
+.loading-text {
+  font-family: "Cairo", "Fredoka", sans-serif;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--on-sky-soft);
+  margin: 0;
+}
+
+/* ============================================================
+   Story display — cover, RTL Arabic article, audio
+   ============================================================ */
+
+.story-emoji-row {
+  text-align: center;
+  font-size: 2.6rem;
+  margin-bottom: 14px;
+  letter-spacing: 8px;
 }
 
 .cover {
@@ -158,12 +516,13 @@ button {
   aspect-ratio: 16 / 10;
   border-radius: 28px;
   overflow: hidden;
-  margin: 0 0 20px;
-  background: linear-gradient(135deg, #ffe4e6, #dbeafe);
+  margin: 0 0 22px;
+  background: linear-gradient(135deg, var(--coral), var(--pale-pink));
   box-shadow: var(--card-shadow);
   display: flex;
   align-items: center;
   justify-content: center;
+  border: 4px solid rgba(254, 225, 223, 0.4);
 }
 
 .cover-image {
@@ -177,9 +536,9 @@ button {
   display: flex;
   align-items: center;
   gap: 14px;
-  font-family: "Cairo", "Noto Naskh Arabic", sans-serif;
-  font-size: 1.1rem;
-  color: var(--ink-soft);
+  font-family: "Cairo", "Fredoka", sans-serif;
+  font-size: 1.15rem;
+  color: var(--on-card);
 }
 
 .cover-error {
@@ -187,10 +546,10 @@ button {
 }
 
 .cover-spinner {
-  width: 26px;
-  height: 26px;
-  border: 4px solid var(--accent-soft);
-  border-top-color: var(--accent);
+  width: 28px;
+  height: 28px;
+  border: 4px solid rgba(95, 165, 186, 0.25);
+  border-top-color: var(--teal-deep);
   border-radius: 50%;
   animation: spin 0.9s linear infinite;
 }
@@ -201,141 +560,60 @@ button {
   }
 }
 
-.idea-box {
-  width: 100%;
-  min-height: 140px;
-  border-radius: 20px;
-  border: 4px solid #ffe1ec;
-  background: white;
-  padding: 18px 20px;
-  font-family: inherit;
-  font-size: 1.15rem;
-  line-height: 1.6;
-  resize: vertical;
+.story {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 28px;
+  padding: 36px clamp(20px, 5vw, 52px);
   box-shadow: var(--card-shadow);
-  outline: none;
-  transition: border-color 0.15s;
+  font-size: 1.55rem;
+  line-height: 2;
+  color: var(--on-card);
+  font-family: "Cairo", "Noto Naskh Arabic", "Segoe UI", "Tahoma", sans-serif;
 }
 
-.idea-box:focus {
-  border-color: var(--accent);
+.story[dir="rtl"] {
+  text-align: right;
 }
 
-.idea-box::placeholder {
-  font-family: "Cairo", "Noto Naskh Arabic", sans-serif;
-  color: #b9b1c7;
+.story p {
+  margin: 0 0 20px;
 }
 
-.loading {
-  text-align: center;
-  padding: 60px 20px;
+.story p:last-child {
+  margin-bottom: 0;
 }
 
-.loading-orb {
-  width: 120px;
-  height: 120px;
-  margin: 0 auto 24px;
-  border-radius: 50%;
-  background: radial-gradient(circle at 30% 30%, #ffd5e3, var(--accent));
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 4rem;
-  animation: pulse 1.6s ease-in-out infinite;
-  box-shadow: 0 0 40px rgba(255, 111, 163, 0.4);
-}
-
-@keyframes pulse {
-  0%, 100% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(1.08);
-  }
-}
-
-.loading-text {
-  font-family: "Cairo", "Noto Naskh Arabic", sans-serif;
-  font-size: 1.4rem;
-  color: var(--ink);
-  margin: 0;
-}
-
-.error-text {
-  text-align: center;
-  font-size: 1.1rem;
-  color: #b03050;
-  background: #ffe4e6;
-  border-radius: 16px;
-  padding: 14px 18px;
-  margin: 16px auto;
-  max-width: 600px;
-}
-
-.audio-player {
-  display: block;
-  width: 100%;
-  margin: 20px auto 0;
-  max-width: 520px;
-}
-
-.story-emoji-row {
-  text-align: center;
-  font-size: 3rem;
-  margin-bottom: 12px;
-  letter-spacing: 6px;
+.story-title {
+  font-size: 2.2rem;
+  margin: 0 0 22px;
+  color: var(--teal-deep);
+  font-weight: 800;
 }
 
 .actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: 14px;
   justify-content: center;
   margin-top: 28px;
 }
 
-.btn {
-  border: none;
-  border-radius: 999px;
-  padding: 14px 28px;
-  font-size: 1.15rem;
-  font-weight: 700;
-  background: var(--accent);
-  color: white;
-  box-shadow: 0 4px 0 #c8467a;
-  transition: transform 0.1s, box-shadow 0.1s;
+.audio-player {
+  display: block;
+  width: 100%;
+  margin: 22px auto 0;
+  max-width: 540px;
 }
 
-.btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 0 #c8467a;
-}
-
-.btn:active {
-  transform: translateY(2px);
-  box-shadow: 0 2px 0 #c8467a;
-}
-
-.btn.secondary {
-  background: white;
-  color: var(--ink);
-  box-shadow: 0 4px 0 #d8cfe6;
-}
-
-.btn.secondary:hover {
-  box-shadow: 0 6px 0 #d8cfe6;
-}
-
-.btn.secondary:active {
-  box-shadow: 0 2px 0 #d8cfe6;
-}
-
-.back-link {
-  display: inline-block;
-  background: none;
-  border: none;
-  color: var(--ink-soft);
-  font-size: 1rem;
-  margin-bottom: 12px;
-  text-decoration: underline;
+.error-text {
+  text-align: center;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--on-card);
+  background: var(--coral);
+  border-radius: 18px;
+  padding: 16px 22px;
+  margin: 18px auto;
+  max-width: 600px;
+  box-shadow: var(--card-shadow);
 }

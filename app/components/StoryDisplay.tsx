@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useShootingStar } from "./ShootingStar";
 
 type Props = {
   title: string;
@@ -27,6 +28,7 @@ export function StoryDisplay({
   const [audioLoading, setAudioLoading] = useState(false);
   const [audioError, setAudioError] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const triggerShootingStar = useShootingStar();
 
   useEffect(() => {
     return () => {
@@ -35,6 +37,7 @@ export function StoryDisplay({
   }, [audioUrl]);
 
   async function handleListen() {
+    triggerShootingStar();
     if (audioUrl) {
       audioRef.current?.play();
       return;
