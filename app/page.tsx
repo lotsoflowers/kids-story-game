@@ -133,7 +133,18 @@ export default function Home() {
         createdAt: Date.now(),
       };
       saveStory(saved).catch((err) => {
-        console.warn("library save failed", err);
+        console.warn("local library save failed", err);
+      });
+
+      // Publish to the shared cloud library too. If the cloud isn't
+      // configured the API returns 503 — we ignore the failure and
+      // the kid still has their local copy.
+      fetch("/api/cloud-stories", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(saved),
+      }).catch((err) => {
+        console.warn("cloud publish failed", err);
       });
 
       if (pollinationsUrl) {

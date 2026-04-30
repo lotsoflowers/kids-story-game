@@ -76,6 +76,22 @@ Then open **http://localhost:3000**.
 | Var | Required | What it's for |
 |---|---|---|
 | `STORY_MODEL` | no | Pollinations text model. Defaults to `openai`. Other options: `mistral`, `llama`, `deepseek`, `gemini`. |
+| `UPSTASH_REDIS_REST_URL` | no | Enables the **shared cloud library**. Without it, library falls back to per-device IndexedDB. |
+| `UPSTASH_REDIS_REST_TOKEN` | no | Same. Both vars together enable cloud. |
+
+### Shared library setup (optional)
+
+To make every story visible to all users:
+
+1. On Vercel: project → **Storage** → **Connect Database** → pick
+   **Upstash Redis** (free tier).
+2. Vercel auto-injects `UPSTASH_REDIS_REST_URL` and
+   `UPSTASH_REDIS_REST_TOKEN` into the project env.
+3. Redeploy. The library view automatically switches from per-device
+   to the shared global feed.
+
+Or sign up directly at [upstash.com](https://upstash.com) and paste
+the values into Vercel's env-var settings yourself.
 
 `.env.local` is gitignored — secrets never reach the commit. All
 keys are read **server-side only**: API routes call out to

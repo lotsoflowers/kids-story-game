@@ -63,13 +63,20 @@ read in API routes via `process.env`, never prefixed with
 
 - Story + converse → Pollinations text (`https://text.pollinations.ai`)
 - Cover image → Pollinations image (URL constructed in the browser)
-- Narration → `window.speechSynthesis` (runs on the user's device)
+- Narration → `/api/narrate` proxies Google Translate's unofficial
+  TTS endpoint (free, keyless), with `window.speechSynthesis` as
+  fallback if the route fails.
 
-Optional override:
+Optional overrides:
 - `STORY_MODEL` — Pollinations text model. Defaults to `openai`
   (GPT-class). Other supported values: `mistral`, `llama`,
-  `deepseek`, `gemini`. Both story and converse routes share this
-  env var.
+  `deepseek`, `gemini`.
+- `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN` — enables
+  the **shared cloud library** so every generated story is published
+  to a global feed visible to all users. Without these the Library
+  view falls back to per-device IndexedDB (the kid only sees stories
+  they made on this device). Get them from upstash.com (free tier)
+  or via Vercel → Storage → Connect Database → Upstash.
 
 ## Local dev
 
@@ -98,6 +105,19 @@ Optional override:
   `{ ready: true, story_prompt }` or `{ ready: false, question, chips }`.
   Hard cap of 2 kid turns: after that the route synthesizes a
   story_prompt regardless, so the conversation can't loop.
+- `POST /api/narrate` — body `{ text }`, returns `audio/mpeg` bytes.
+  Chunks the text on Arabic sentence terminators (≤190 chars per
+  chunk), proxies each chunk to Google Translate's unofficial TTS
+  endpoint, byte-concatenates the MP3 frames, sends back as one blob.
+  Returns 502 if Google rate-limits or blocks; the frontend falls
+  back to `speechSynthesis` in that case.
+- `GET /api/cloud-stories` — returns `{ stories: CloudStory[], configured }`.
+  When `configured: false`, the cloud isn't set up and the Library
+  view falls back to IndexedDB.
+- `POST /api/cloud-stories` — body is a CloudStory; saves to Upstash
+  Redis (sorted set + hash). Returns 503 if cloud isn't configured —
+  silent failure on the client (the local IndexedDB save still
+  happened).
 
 **No image or narration routes.** Both run client-side:
 
