@@ -13,6 +13,23 @@ type Props = {
   onStartOver: () => void;
 };
 
+type SpeechState = "idle" | "loading" | "playing" | "paused" | "error";
+
+// Pick the warmest-sounding Arabic voice the OS exposes. Falls back to
+// any Arabic-region voice, then the default voice if the OS has no
+// Arabic TTS installed.
+function pickArabicVoice(): SpeechSynthesisVoice | null {
+  if (typeof window === "undefined") return null;
+  const voices = window.speechSynthesis.getVoices();
+  if (!voices.length) return null;
+  // Prefer female voices first since they read more like a storybook narrator.
+  const arabic = voices.filter((v) => v.lang.toLowerCase().startsWith("ar"));
+  const preferred =
+    arabic.find((v) => /maged|fatima|salma|laila|amira|maha|sahar|sara/i.test(v.name)) ||
+    arabic[0];
+  return preferred ?? voices[0];
+}
+
 export function StoryDisplay({
   title,
   paragraphs,
@@ -22,47 +39,97 @@ export function StoryDisplay({
   imageError,
   onStartOver,
 }: Props) {
-  const [audioUrl, setAudioUrl] = useState<string | null>(null);
-  const [audioLoading, setAudioLoading] = useState(false);
-  const [audioError, setAudioError] = useState<string | null>(null);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [speechState, setSpeechState] = useState<SpeechState>("idle");
+  const [speechError, setSpeechError] = useState<string | null>(null);
+  const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
   const triggerShootingStar = useShootingStar();
 
+  // Stop speech if the component unmounts or the story changes.
   useEffect(() => {
     return () => {
-      if (audioUrl) URL.revokeObjectURL(audioUrl);
+      if (typeof window !== "undefined") {
+        window.speechSynthesis.cancel();
+      }
     };
-  }, [audioUrl]);
+  }, []);
 
-  async function handleListen() {
+  useEffect(() => {
+    // Cancel any prior utterance when the story content changes.
+    if (typeof window !== "undefined") {
+      window.speechSynthesis.cancel();
+      setSpeechState("idle");
+    }
+  }, [title]);
+
+  // Some browsers populate getVoices() asynchronously. Trigger a
+  // re-render once they arrive so handleListen can pick the right one.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const synth = window.speechSynthesis;
+    if (!synth) return;
+    const onChange = () => {
+      // No state to set — pickArabicVoice reads voices fresh on click.
+    };
+    synth.addEventListener?.("voiceschanged", onChange);
+    return () => synth.removeEventListener?.("voiceschanged", onChange);
+  }, []);
+
+  function handleListen() {
     triggerShootingStar();
-    if (audioUrl) {
-      audioRef.current?.play();
+    if (typeof window === "undefined" || !window.speechSynthesis) {
+      setSpeechError("متصفحك لا يدعم القراءة بصوت عال");
+      setSpeechState("error");
       return;
     }
-    setAudioLoading(true);
-    setAudioError(null);
-    try {
-      const res = await fetch("/api/narrate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: `${title}. ${paragraphs.join(" ")}` }),
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.detail || err.error || `HTTP ${res.status}`);
-      }
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      setAudioUrl(url);
-      // Wait for the next tick so the <audio> picks up the src.
-      setTimeout(() => audioRef.current?.play(), 0);
-    } catch (e) {
-      setAudioError(e instanceof Error ? e.message : "فشل تحميل الصوت");
-    } finally {
-      setAudioLoading(false);
+    const synth = window.speechSynthesis;
+
+    // Toggle: if already playing, pause; if paused, resume.
+    if (speechState === "playing") {
+      synth.pause();
+      setSpeechState("paused");
+      return;
     }
+    if (speechState === "paused") {
+      synth.resume();
+      setSpeechState("playing");
+      return;
+    }
+
+    // Fresh start.
+    synth.cancel();
+    setSpeechError(null);
+    const text = `${title}. ${paragraphs.join(" ")}`;
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = "ar-SA";
+    u.rate = 0.92;
+    u.pitch = 1.05;
+    const voice = pickArabicVoice();
+    if (voice) u.voice = voice;
+    u.onstart = () => setSpeechState("playing");
+    u.onend = () => setSpeechState("idle");
+    u.onerror = (e) => {
+      setSpeechError(e.error || "تعذّر تشغيل الصوت");
+      setSpeechState("error");
+    };
+    utteranceRef.current = u;
+    synth.speak(u);
+    // Some browsers don't fire onstart reliably; flip state immediately.
+    setSpeechState("playing");
   }
+
+  function handleStop() {
+    if (typeof window !== "undefined") {
+      window.speechSynthesis.cancel();
+    }
+    setSpeechState("idle");
+  }
+
+  const listenLabel =
+    speechState === "playing"
+      ? "⏸ إيقاف مؤقت"
+      : speechState === "paused"
+        ? "▶ تابع"
+        : "🔊 استمع";
 
   return (
     <section>
@@ -93,23 +160,20 @@ export function StoryDisplay({
       </article>
 
       <div className="actions">
-        <button
-          type="button"
-          className="btn"
-          onClick={handleListen}
-          disabled={audioLoading}
-        >
-          {audioLoading ? "...جاري التحميل" : audioUrl ? "▶ استمع مرة أخرى" : "🔊 استمع"}
+        <button type="button" className="btn" onClick={handleListen}>
+          {listenLabel}
         </button>
+        {(speechState === "playing" || speechState === "paused") && (
+          <button type="button" className="btn secondary" onClick={handleStop}>
+            ⏹ توقف
+          </button>
+        )}
         <button type="button" className="btn secondary" onClick={onStartOver}>
           ✨ قصة جديدة
         </button>
       </div>
 
-      {audioError && <p className="error-text">⚠️ {audioError}</p>}
-      {audioUrl && (
-        <audio ref={audioRef} src={audioUrl} controls className="audio-player" />
-      )}
+      {speechError && <p className="error-text">⚠️ {speechError}</p>}
     </section>
   );
 }

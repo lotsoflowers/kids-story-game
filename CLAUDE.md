@@ -59,22 +59,17 @@ commit / skip the body.
 read in API routes via `process.env`, never prefixed with
 `NEXT_PUBLIC_` (that would leak them into the client bundle).
 
-Required vars (see `.env.example`):
-- `OPENROUTER_API_KEY` — for both story LLM and image model.
-- `MUNSIT_API_KEY` — JWT-format API key for narration.
+**No required env vars.** The app uses fully free, keyless services:
 
-Optional (have sensible defaults baked into the API routes):
-- `OPENROUTER_STORY_MODEL` — default `google/gemini-2.5-pro`.
-- `OPENROUTER_IMAGE_MODEL` — default `google/gemini-2.5-flash-image`
-  (NOT the `-preview` slug; that one 404s on OpenRouter).
-- `MUNSIT_VOICE_ID` — default `OUOdy43qiHKwzVLRScXFnUe8` (Arwa,
-  female fusha/MSA, picked from 14 fusha voices for kids' storybook
-  warmth).
-- `MUNSIT_MODEL_ID` — default `faseeh-v1-preview` (high-quality
-  variant; `faseeh-mini-v1-preview` exists for low-latency).
+- Story + converse → Pollinations text (`https://text.pollinations.ai`)
+- Cover image → Pollinations image (URL constructed in the browser)
+- Narration → `window.speechSynthesis` (runs on the user's device)
 
-Browse other Munsit voices: `GET https://api.munsit.com/api/v1/voices`
-with the `x-api-key` header.
+Optional override:
+- `STORY_MODEL` — Pollinations text model. Defaults to `openai`
+  (GPT-class). Other supported values: `mistral`, `llama`,
+  `deepseek`, `gemini`. Both story and converse routes share this
+  env var.
 
 ## Local dev
 
@@ -94,21 +89,25 @@ with the `x-api-key` header.
 
 ## API routes — quick reference
 
-- `POST /api/story` — body `{ idea?, selections? }`, returns
-  `{ title, paragraphs: string[5], imagePrompt }`. Uses OpenRouter
-  chat completions, asks the model for `response_format json_object`,
-  has a fence-stripping JSON-recovery fallback for models that wrap
-  output in ```json. `max_tokens: 4000` — Arabic burns 2-3× more
-  tokens per character than English; lower budgets truncate.
-- `POST /api/image` — body `{ prompt }`, returns `{ imageUrl }` as a
-  ~2 MB base64 data URI. Uses Gemini image gen via OpenRouter's
-  `modalities: ["image","text"]`. Don't `<Image>`-render — use plain
-  `<img>` to skip Next/Image's remote-pattern config.
-- `POST /api/narrate` — body `{ text }`, returns `audio/wav` bytes
-  (16-bit PCM mono 24 kHz). Munsit's body shape:
-  `{ voice_id, text, stability, speed, streaming: false }`. Stability
-  0.5 / speed 0.95 — slight slowdown helps young listeners. Auth via
-  `x-api-key` header (NOT `Authorization: Bearer`).
+- `POST /api/story` — body `{ idea?, selections?, storyPrompt? }`,
+  returns `{ title, paragraphs: string[5], imagePrompt }`. Uses
+  OpenRouter chat completions with `response_format json_object` and
+  a fence-stripping JSON-recovery fallback. `max_tokens: 4000` —
+  Arabic burns 2-3× more tokens per character than English.
+- `POST /api/converse` — body `{ history: [{role, text}] }`, returns
+  `{ ready: true, story_prompt }` or `{ ready: false, question, chips }`.
+  Hard cap of 2 kid turns: after that the route synthesizes a
+  story_prompt regardless, so the conversation can't loop.
+
+**No image or narration routes.** Both run client-side:
+
+- **Cover image** (in `app/page.tsx`): build a Pollinations URL from
+  the `imagePrompt` and stick it in `<img src>`. URL pattern:
+  `https://image.pollinations.ai/prompt/{encoded}?width=1024&height=640&model=flux&nologo=true`.
+- **Narration** (in `StoryDisplay.tsx`): `window.speechSynthesis`.
+  Pick a voice with `lang.startsWith('ar')` and prefer common
+  Arabic narrator names (Maged, Salma, Laila, etc.). Fallback to
+  the default voice if the OS has no Arabic TTS installed.
 
 ## Theme — design guardrails
 

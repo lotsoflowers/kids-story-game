@@ -49,12 +49,7 @@ const FALLBACK_FIRST_QUESTION = {
 };
 
 export async function POST(req: NextRequest) {
-  const apiKey = process.env.OPENROUTER_API_KEY;
-  if (!apiKey) {
-    return NextResponse.json({ error: "OPENROUTER_API_KEY is not set" }, { status: 500 });
-  }
-
-  const model = process.env.OPENROUTER_STORY_MODEL || "google/gemini-2.5-pro";
+  const model = process.env.STORY_MODEL || "openai";
 
   let body: { history?: Turn[] };
   try {
@@ -65,8 +60,8 @@ export async function POST(req: NextRequest) {
 
   const history = body.history ?? [];
 
-  // First-turn shortcut: if the kid hasn't said anything yet, return a
-  // canned warm-welcome question without burning an LLM call.
+  // First-turn shortcut: kid hasn't said anything yet, return a canned
+  // welcome without burning an LLM call.
   if (history.length === 0 || !history.some((t) => t.role === "kid")) {
     return NextResponse.json(FALLBACK_FIRST_QUESTION);
   }
@@ -77,16 +72,10 @@ export async function POST(req: NextRequest) {
 
   const turnsByKid = history.filter((t) => t.role === "kid").length;
 
-  const orRes = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+  const polRes = await fetch("https://text.pollinations.ai/", {
     method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-      "HTTP-Referer": "http://localhost:3001",
-      "X-Title": "Kids Story Builder",
-    },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      model,
       messages: [
         { role: "system", content: SYSTEM_PROMPT },
         {
@@ -96,22 +85,20 @@ export async function POST(req: NextRequest) {
           }\n\nأعد JSON فقط.`,
         },
       ],
-      response_format: { type: "json_object" },
-      temperature: 0.7,
-      max_tokens: 800,
+      model,
+      jsonMode: true,
     }),
   });
 
-  if (!orRes.ok) {
-    const text = await orRes.text();
+  if (!polRes.ok) {
+    const text = await polRes.text();
     return NextResponse.json(
-      { error: "OpenRouter request failed", status: orRes.status, detail: text },
+      { error: "خدمة المحادثة غير متاحة الآن", status: polRes.status, detail: text },
       { status: 502 },
     );
   }
 
-  const data = await orRes.json();
-  const content: string = data?.choices?.[0]?.message?.content ?? "";
+  const raw = await polRes.text();
 
   let parsed: {
     ready?: boolean;
@@ -120,16 +107,16 @@ export async function POST(req: NextRequest) {
     chips?: string[];
   };
   try {
-    parsed = JSON.parse(content);
+    parsed = JSON.parse(raw);
   } catch {
-    const stripped = content.replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/i, "");
+    const stripped = raw.replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/i, "");
     try {
       parsed = JSON.parse(stripped);
     } catch {
       const match = stripped.match(/\{[\s\S]*\}/);
       if (!match) {
         return NextResponse.json(
-          { error: "Model did not return JSON", raw: content.slice(0, 1000) },
+          { error: "النموذج لم يُعِد JSON صالحًا", raw: raw.slice(0, 1000) },
           { status: 502 },
         );
       }
@@ -137,8 +124,8 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // Hard cap: after 2 kid turns we don't want any more questions, even
-  // if the model tried. Synthesize a story_prompt from whatever they said.
+  // Hard cap: after 2 kid turns, force a story regardless of what the
+  // model wanted to do.
   if (turnsByKid >= 2 && !parsed.ready) {
     return NextResponse.json({
       ready: true,

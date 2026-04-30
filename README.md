@@ -31,12 +31,29 @@ occasional shooting star.
 
 ## 🚀 Run it locally
 
-You'll need:
-- **Node 20+**
-- An **OpenRouter** account ([openrouter.ai](https://openrouter.ai))
-  — pays for the story LLM and cover image
-- A **Munsit** account ([munsit.com](https://munsit.com)) — pays for
-  the Arabic narration
+You'll need **Node 20+**. That's it.
+
+This app uses fully free, keyless services:
+
+- **Story + conversation** → [Pollinations text](https://text.pollinations.ai)
+  (no key, no signup, GPT-class quality, JSON output supported).
+- **Cover image** → [Pollinations image](https://image.pollinations.ai)
+  (no key, fetched directly from the browser).
+- **Narration** → browser's built-in `speechSynthesis` API, runs on
+  the user's device. No TTS service, no key, no network call for audio.
+  *Note:* voice quality depends on the user's OS. Windows 11, iOS,
+  macOS, and modern Android ship with at least one Arabic voice
+  (Naayf, Maged, etc.). Older systems may fall back to a non-Arabic
+  voice that mispronounces.
+
+```bash
+git clone https://github.com/lotsoflowers/kids-story-game.git
+cd kids-story-game
+npm install
+npm run dev
+```
+
+Then open **http://localhost:3000** — it just works.
 
 ```bash
 git clone https://github.com/lotsoflowers/kids-story-game.git
@@ -58,12 +75,7 @@ Then open **http://localhost:3000**.
 
 | Var | Required | What it's for |
 |---|---|---|
-| `OPENROUTER_API_KEY` | yes | Story LLM **and** cover image. |
-| `MUNSIT_API_KEY` | yes | Arabic narration. JWT format. |
-| `OPENROUTER_STORY_MODEL` | no | Defaults to `google/gemini-2.5-pro`. |
-| `OPENROUTER_IMAGE_MODEL` | no | Defaults to `google/gemini-2.5-flash-image`. |
-| `MUNSIT_VOICE_ID` | no | Defaults to **Arwa** (fusha / female). Browse alternatives via `GET https://api.munsit.com/api/v1/voices`. |
-| `MUNSIT_MODEL_ID` | no | Defaults to `faseeh-v1-preview` (high-quality). |
+| `STORY_MODEL` | no | Pollinations text model. Defaults to `openai`. Other options: `mistral`, `llama`, `deepseek`, `gemini`. |
 
 `.env.local` is gitignored — secrets never reach the commit. All
 keys are read **server-side only**: API routes call out to
@@ -79,9 +91,7 @@ kids-story-game/
 ├─ app/
 │  ├─ api/
 │  │  ├─ converse/route.ts   ← LLM-driven conversation orchestrator
-│  │  ├─ story/route.ts      ← OpenRouter chat completions (Arabic)
-│  │  ├─ image/route.ts      ← OpenRouter image gen (cover)
-│  │  └─ narrate/route.ts    ← Munsit text-to-speech (WAV)
+│  │  └─ story/route.ts      ← OpenRouter chat completions (Arabic)
 │  ├─ components/
 │  │  ├─ NightSky.tsx        ← Stars, moon, drifting clouds
 │  │  ├─ ShootingStar.tsx    ← Provider + trigger for delight moments
@@ -142,14 +152,11 @@ are cheap.
 
 ## 🙏 Credits
 
-- **OpenRouter** — model gateway. [openrouter.ai](https://openrouter.ai)
-- **Google Gemini 2.5 Pro** — Arabic prose so good it feels written
-  by a real children's-book author.
-- **Google Gemini 2.5 Flash Image** — gentle cartoon cover
-  illustrations.
-- **Munsit (CNTXT AI)** — Arabic-native voice synthesis with
-  fusha + 25 dialects. [munsit.com](https://munsit.com)
-- **Cairo** + **Fredoka** — Google Fonts.
+- **[Pollinations.ai](https://pollinations.ai)** — free, open,
+  keyless text and image generation. The whole app runs on it.
+- **Web Speech API (`speechSynthesis`)** — built into every modern
+  browser; runs locally on the user's device.
+- **Cairo** — Google Fonts (Arabic display + body).
 
 ---
 

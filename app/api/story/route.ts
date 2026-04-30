@@ -38,12 +38,11 @@ function buildUserPrompt(idea: string, sel: Selections) {
 }
 
 export async function POST(req: NextRequest) {
-  const apiKey = process.env.OPENROUTER_API_KEY;
-  if (!apiKey) {
-    return NextResponse.json({ error: "OPENROUTER_API_KEY is not set" }, { status: 500 });
-  }
-
-  const model = process.env.OPENROUTER_STORY_MODEL || "google/gemini-2.5-pro";
+  // Pollinations text — completely free, no API key, no signup. Routes
+  // to a GPT-class model under the hood. We pass jsonMode=true so the
+  // response body is parseable JSON without needing a recovery
+  // fallback.
+  const model = process.env.STORY_MODEL || "openai";
 
   let body: { idea?: string; selections?: Selections; storyPrompt?: string };
   try {
@@ -56,56 +55,45 @@ export async function POST(req: NextRequest) {
   const selections = body.selections ?? {};
   const storyPrompt = body.storyPrompt ?? "";
 
-  const orRes = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+  const userMessage = storyPrompt
+    ? `${storyPrompt}\n\nاكتب القصة باللغة العربية الفصحى البسيطة من 5 فقرات.\n\nأعد النتيجة بصيغة JSON بهذا الشكل بالضبط:\n{\n  "title": "عنوان القصة",\n  "paragraphs": ["الفقرة الأولى", "الفقرة الثانية", "الفقرة الثالثة", "الفقرة الرابعة", "الفقرة الخامسة"],\n  "imagePrompt": "وصف باللغة الإنجليزية لرسمة كرتونية لطيفة تناسب القصة، بدون نص ظاهر في الصورة"\n}`
+    : buildUserPrompt(idea, selections);
+
+  const polRes = await fetch("https://text.pollinations.ai/", {
     method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-      "HTTP-Referer": "http://localhost:3001",
-      "X-Title": "Kids Story Builder",
-    },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      model,
       messages: [
         { role: "system", content: SYSTEM_PROMPT },
-        {
-          role: "user",
-          content: storyPrompt
-            ? `${storyPrompt}\n\nاكتب القصة باللغة العربية الفصحى البسيطة من 5 فقرات.\n\nأعد النتيجة بصيغة JSON بهذا الشكل بالضبط:\n{\n  "title": "عنوان القصة",\n  "paragraphs": ["الفقرة الأولى", "الفقرة الثانية", "الفقرة الثالثة", "الفقرة الرابعة", "الفقرة الخامسة"],\n  "imagePrompt": "وصف باللغة الإنجليزية لرسمة كرتونية لطيفة تناسب القصة، بدون نص ظاهر في الصورة"\n}`
-            : buildUserPrompt(idea, selections),
-        },
+        { role: "user", content: userMessage },
       ],
-      response_format: { type: "json_object" },
-      temperature: 0.85,
-      max_tokens: 4000,
+      model,
+      jsonMode: true,
     }),
   });
 
-  if (!orRes.ok) {
-    const text = await orRes.text();
+  if (!polRes.ok) {
+    const detail = await polRes.text();
     return NextResponse.json(
-      { error: "OpenRouter request failed", status: orRes.status, detail: text },
+      { error: "خدمة القصص غير متاحة الآن", status: polRes.status, detail },
       { status: 502 },
     );
   }
 
-  const data = await orRes.json();
-  const content: string = data?.choices?.[0]?.message?.content ?? "";
-
+  const raw = await polRes.text();
   let parsed: { title?: string; paragraphs?: string[]; imagePrompt?: string };
   try {
-    parsed = JSON.parse(content);
+    parsed = JSON.parse(raw);
   } catch {
-    // Strip ```json ... ``` fences some models add even when asked for raw JSON.
-    const stripped = content.replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/i, "");
+    // Fence-stripping fallback for the rare case the model wraps JSON.
+    const stripped = raw.replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/i, "");
     try {
       parsed = JSON.parse(stripped);
     } catch {
-      // Last resort: grab the largest balanced-ish object substring.
       const match = stripped.match(/\{[\s\S]*\}/);
       if (!match) {
         return NextResponse.json(
-          { error: "Model did not return JSON", raw: content.slice(0, 1500) },
+          { error: "النموذج لم يُعِد JSON صالحًا", raw: raw.slice(0, 1500) },
           { status: 502 },
         );
       }
@@ -113,7 +101,7 @@ export async function POST(req: NextRequest) {
         parsed = JSON.parse(match[0]);
       } catch {
         return NextResponse.json(
-          { error: "Model returned malformed JSON", raw: content.slice(0, 1500) },
+          { error: "النموذج أعاد JSON معطوبًا", raw: raw.slice(0, 1500) },
           { status: 502 },
         );
       }
@@ -121,7 +109,7 @@ export async function POST(req: NextRequest) {
   }
 
   if (!parsed.paragraphs || !Array.isArray(parsed.paragraphs) || parsed.paragraphs.length === 0) {
-    return NextResponse.json({ error: "Story missing paragraphs", parsed }, { status: 502 });
+    return NextResponse.json({ error: "القصة لا تحتوي على فقرات", parsed }, { status: 502 });
   }
 
   return NextResponse.json({

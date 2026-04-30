@@ -8,7 +8,7 @@ import { ChatInput } from "./components/ChatInput";
 import { ThemeToggle } from "./components/ThemeToggle";
 import { Library } from "./components/Library";
 import { useShootingStar } from "./components/ShootingStar";
-import { SavedStory, newStoryId, saveStory, updateStory } from "@/lib/library";
+import { SavedStory, newStoryId, saveStory } from "@/lib/library";
 
 type Phase = "chat" | "loading" | "story" | "library" | "error";
 
@@ -108,8 +108,19 @@ export default function Home() {
       triggerShootingStar();
       setTimeout(() => triggerShootingStar(), 600);
 
-      // Save to local library immediately. Image will be patched in
-      // when it lands so the library card has a thumbnail.
+      // Build a deterministic Pollinations URL from the imagePrompt.
+      // Pollinations is free, no key, no signup — the browser fetches
+      // it directly (no API route needed). The URL itself is small and
+      // stable, so saving it in the library means we don't have to
+      // store a multi-MB base64 blob per story.
+      const styledPrompt = data.imagePrompt
+        ? `Children's storybook illustration. Soft, warm, friendly cartoon style. Bright colors, gentle shapes. No text, letters, or words anywhere in the image. Subject: ${data.imagePrompt}`
+        : "";
+      const pollinationsUrl = styledPrompt
+        ? `https://image.pollinations.ai/prompt/${encodeURIComponent(styledPrompt)}?width=1024&height=640&model=flux&nologo=true`
+        : null;
+
+      // Save to local library immediately with the URL baked in.
       const id = newStoryId();
       setCurrentStoryId(id);
       const saved: SavedStory = {
@@ -117,7 +128,7 @@ export default function Home() {
         title: data.title,
         paragraphs: data.paragraphs,
         imagePrompt: data.imagePrompt,
-        imageUrl: null,
+        imageUrl: pollinationsUrl,
         storyPrompt,
         createdAt: Date.now(),
       };
@@ -125,26 +136,14 @@ export default function Home() {
         console.warn("library save failed", err);
       });
 
-      if (data.imagePrompt) {
+      if (pollinationsUrl) {
         setImageLoading(true);
-        fetch("/api/image", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ prompt: data.imagePrompt }),
-        })
-          .then(async (r) => {
-            if (!r.ok) {
-              const err = await r.json().catch(() => ({}));
-              throw new Error(err.detail || err.error || `HTTP ${r.status}`);
-            }
-            const j = await r.json();
-            setImageUrl(j.imageUrl);
-            updateStory(id, { imageUrl: j.imageUrl }).catch(() => {});
-          })
-          .catch((e: unknown) => {
-            setImageError(e instanceof Error ? e.message : "خطأ في الصورة");
-          })
-          .finally(() => setImageLoading(false));
+        setImageUrl(pollinationsUrl);
+        // Pollinations generates on-demand and may take a few seconds;
+        // <img> onLoad in StoryDisplay would be ideal but we don't get
+        // a callback here, so we just clear the spinner once the URL
+        // is set. The <img> will progressively load.
+        setImageLoading(false);
       }
     } catch (e) {
       setErrorMessage(e instanceof Error ? e.message : "حدث خطأ");
