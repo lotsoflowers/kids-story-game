@@ -1,14 +1,15 @@
 "use client";
 
-import { useState } from "react";
-import { Choice, StepKey, steps } from "@/lib/choices";
-import { StepPicker } from "./components/StepPicker";
+import { useEffect, useState } from "react";
 import { StoryDisplay } from "./components/StoryDisplay";
-import { IdeaInput } from "./components/IdeaInput";
 import { LoadingScreen } from "./components/LoadingScreen";
+import { StoryFriend } from "./components/StoryFriend";
+import { ChatInput } from "./components/ChatInput";
 import { useShootingStar } from "./components/ShootingStar";
 
-type Phase = "pick" | "idea" | "loading" | "story" | "error";
+type Phase = "chat" | "loading" | "story" | "error";
+
+type Turn = { role: "friend" | "kid"; text: string };
 
 type GeneratedStory = {
   title: string;
@@ -16,11 +17,22 @@ type GeneratedStory = {
   imagePrompt: string;
 };
 
+const DEFAULT_FIRST_QUESTION = "ما القصة التي تريد سماعها الليلة؟ 🌙";
+const DEFAULT_FIRST_CHIPS = [
+  "تنين شجاع 🐉",
+  "أميرة في الفضاء 🚀",
+  "صديقان في الغابة 🌳",
+  "فاجئني! ✨",
+];
+
 export default function Home() {
-  const [stepIndex, setStepIndex] = useState(0);
-  const [selections, setSelections] = useState<Partial<Record<StepKey, Choice>>>({});
-  const [idea, setIdea] = useState("");
-  const [phase, setPhase] = useState<Phase>("pick");
+  const [phase, setPhase] = useState<Phase>("chat");
+  const [history, setHistory] = useState<Turn[]>([
+    { role: "friend", text: DEFAULT_FIRST_QUESTION },
+  ]);
+  const [chips, setChips] = useState<string[]>(DEFAULT_FIRST_CHIPS);
+  const [draft, setDraft] = useState("");
+  const [thinking, setThinking] = useState(false);
   const [story, setStory] = useState<GeneratedStory | null>(null);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [imageLoading, setImageLoading] = useState(false);
@@ -29,50 +41,48 @@ export default function Home() {
 
   const triggerShootingStar = useShootingStar();
 
-  const totalSteps = steps.length;
-  const currentStep = steps[stepIndex];
-  const currentChoice = selections[currentStep?.key];
+  // Always show the latest friend question as the visible bubble.
+  const currentQuestion =
+    [...history].reverse().find((t) => t.role === "friend")?.text ?? DEFAULT_FIRST_QUESTION;
 
-  const handlePick = (choice: Choice) => {
-    const next = { ...selections, [currentStep.key]: choice };
-    setSelections(next);
-    if (stepIndex < totalSteps - 1) {
-      setStepIndex(stepIndex + 1);
-    } else {
-      setPhase("idea");
+  async function sendKidMessage(text: string) {
+    const newHistory: Turn[] = [...history, { role: "kid", text }];
+    setHistory(newHistory);
+    setDraft("");
+    setThinking(true);
+    triggerShootingStar();
+
+    try {
+      const res = await fetch("/api/converse", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ history: newHistory }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || err.error || `HTTP ${res.status}`);
+      }
+      const data = await res.json();
+
+      if (data.ready && data.story_prompt) {
+        await generateStory(data.story_prompt);
+      } else if (data.question) {
+        setHistory((h) => [...h, { role: "friend", text: data.question }]);
+        setChips(Array.isArray(data.chips) ? data.chips.slice(0, 4) : []);
+        setThinking(false);
+      } else {
+        throw new Error("Unexpected converse response");
+      }
+    } catch (e) {
+      setErrorMessage(e instanceof Error ? e.message : "حدث خطأ");
+      setPhase("error");
+      setThinking(false);
     }
-  };
+  }
 
-  const handleBack = () => {
-    if (phase === "idea") {
-      setPhase("pick");
-      setStepIndex(totalSteps - 1);
-      return;
-    }
-    if (stepIndex > 0) setStepIndex(stepIndex - 1);
-  };
-
-  const handleStartOver = () => {
-    setSelections({});
-    setStepIndex(0);
-    setIdea("");
-    setStory(null);
-    setImageUrl(null);
-    setImageError(null);
-    setErrorMessage(null);
-    setPhase("pick");
-  };
-
-  const handleChange = () => {
-    setStory(null);
-    setImageUrl(null);
-    setImageError(null);
-    setStepIndex(0);
-    setPhase("pick");
-  };
-
-  async function handleGenerate() {
+  async function generateStory(storyPrompt: string) {
     setPhase("loading");
+    setThinking(false);
     setErrorMessage(null);
     setStory(null);
     setImageUrl(null);
@@ -80,29 +90,21 @@ export default function Home() {
     triggerShootingStar();
 
     try {
-      const selectionLabels = Object.fromEntries(
-        Object.entries(selections).map(([k, v]) => [k, v?.label]),
-      );
-
       const res = await fetch("/api/story", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ idea, selections: selectionLabels }),
+        body: JSON.stringify({ storyPrompt }),
       });
-
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
         throw new Error(err.detail || err.error || `HTTP ${res.status}`);
       }
-
       const data: GeneratedStory = await res.json();
       setStory(data);
       setPhase("story");
       triggerShootingStar();
-      // A second shooting star after a beat for a "wow" reveal moment.
       setTimeout(() => triggerShootingStar(), 600);
 
-      // Kick off image gen in the background — story renders without it.
       if (data.imagePrompt) {
         setImageLoading(true);
         fetch("/api/image", {
@@ -129,50 +131,32 @@ export default function Home() {
     }
   }
 
-  const emojiRow = steps
-    .map((s) => selections[s.key]?.emoji)
-    .filter(Boolean)
-    .join(" ");
+  function handleStartOver() {
+    setHistory([{ role: "friend", text: DEFAULT_FIRST_QUESTION }]);
+    setChips(DEFAULT_FIRST_CHIPS);
+    setDraft("");
+    setStory(null);
+    setImageUrl(null);
+    setImageError(null);
+    setErrorMessage(null);
+    setPhase("chat");
+  }
 
   return (
     <main className="app">
-      <h1 className="title">📖 Story Builder</h1>
-      <p className="subtitle">
-        {phase === "story"
-          ? "Here is your one-of-a-kind story!"
-          : phase === "loading"
-            ? "Magic in progress..."
-            : "Make your own story in a few little choices."}
-      </p>
-
-      {phase === "pick" && (
-        <>
-          <div className="progress" aria-label={`Step ${stepIndex + 1} of ${totalSteps}`}>
-            {steps.map((s, i) => (
-              <span
-                key={s.key}
-                className={`progress-dot${i === stepIndex ? " active" : ""}${
-                  i < stepIndex ? " done" : ""
-                }`}
-              />
-            ))}
-          </div>
-          <StepPicker
-            step={currentStep}
-            current={currentChoice}
-            onPick={handlePick}
-            onBack={stepIndex > 0 ? handleBack : undefined}
+      {phase === "chat" && (
+        <section className="chat-stage">
+          <h1 className="title">📖 Story Builder</h1>
+          <StoryFriend question={currentQuestion} thinking={thinking} />
+          <ChatInput
+            value={draft}
+            onChange={setDraft}
+            onSend={sendKidMessage}
+            onChipTap={(chip) => sendKidMessage(chip)}
+            chips={thinking ? [] : chips}
+            disabled={thinking}
           />
-        </>
-      )}
-
-      {phase === "idea" && (
-        <IdeaInput
-          value={idea}
-          onChange={setIdea}
-          onGenerate={handleGenerate}
-          onBack={handleBack}
-        />
+        </section>
       )}
 
       {phase === "loading" && <LoadingScreen message="جاري كتابة قصتك السحرية..." />}
@@ -181,24 +165,22 @@ export default function Home() {
         <StoryDisplay
           title={story.title}
           paragraphs={story.paragraphs}
-          emojiRow={emojiRow}
+          emojiRow="🌙 ✨"
           imageUrl={imageUrl}
           imageLoading={imageLoading}
           imageError={imageError}
           onStartOver={handleStartOver}
-          onChange={handleChange}
+          onChange={handleStartOver}
         />
       )}
 
       {phase === "error" && (
         <section>
+          <h1 className="title">📖 Story Builder</h1>
           <p className="error-text">⚠️ {errorMessage}</p>
           <div className="actions">
-            <button type="button" className="btn" onClick={handleGenerate}>
+            <button type="button" className="btn" onClick={handleStartOver}>
               Try again
-            </button>
-            <button type="button" className="btn secondary" onClick={handleStartOver}>
-              Start over
             </button>
           </div>
         </section>

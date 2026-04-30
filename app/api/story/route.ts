@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
 
   const model = process.env.OPENROUTER_STORY_MODEL || "google/gemini-2.5-pro";
 
-  let body: { idea?: string; selections?: Selections };
+  let body: { idea?: string; selections?: Selections; storyPrompt?: string };
   try {
     body = await req.json();
   } catch {
@@ -54,6 +54,7 @@ export async function POST(req: NextRequest) {
 
   const idea = body.idea ?? "";
   const selections = body.selections ?? {};
+  const storyPrompt = body.storyPrompt ?? "";
 
   const orRes = await fetch("https://openrouter.ai/api/v1/chat/completions", {
     method: "POST",
@@ -67,7 +68,12 @@ export async function POST(req: NextRequest) {
       model,
       messages: [
         { role: "system", content: SYSTEM_PROMPT },
-        { role: "user", content: buildUserPrompt(idea, selections) },
+        {
+          role: "user",
+          content: storyPrompt
+            ? `${storyPrompt}\n\nاكتب القصة باللغة العربية الفصحى البسيطة من 5 فقرات.\n\nأعد النتيجة بصيغة JSON بهذا الشكل بالضبط:\n{\n  "title": "عنوان القصة",\n  "paragraphs": ["الفقرة الأولى", "الفقرة الثانية", "الفقرة الثالثة", "الفقرة الرابعة", "الفقرة الخامسة"],\n  "imagePrompt": "وصف باللغة الإنجليزية لرسمة كرتونية لطيفة تناسب القصة، بدون نص ظاهر في الصورة"\n}`
+            : buildUserPrompt(idea, selections),
+        },
       ],
       response_format: { type: "json_object" },
       temperature: 0.85,

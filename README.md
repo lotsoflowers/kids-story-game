@@ -1,9 +1,10 @@
 # 📖 Kids Story Builder
 
-A bilingual storytelling game for kids ages 5–8. Tap through five
-picture cards, type a wish (or skip), and an AI weaves you a custom
-**Arabic** bedtime story — complete with a hand-drawn-style cover
-illustration and a warm narrator voice reading it aloud.
+A bilingual storytelling game for kids ages 5–8. A friendly pink moon
+asks what story you want tonight — tap a suggestion or type your own
+idea — and an AI weaves you a custom **Arabic** bedtime story,
+complete with a hand-drawn-style cover illustration and a warm
+narrator voice reading it aloud.
 
 The whole thing happens under a deep-teal night sky filled with
 twinkling stars, a glowing pink moon, drifting clouds, and the
@@ -13,14 +14,15 @@ occasional shooting star.
 
 ## ✨ How it works
 
-1. **Pick five things** — hero, setting, problem, helper, ending.
-   (8 × 8 × 6 × 6 × 4 = 9,216 combinations.)
-2. **Add a wish** — optional text box where you (or your kid) can
-   type a story idea. Arabic or English both work.
-3. **🪄 Make my story** — Gemini 2.5 Pro writes a 5-paragraph Arabic
-   story in the cadence of a traditional bedtime tale, threading
-   your idea into the moral.
-4. **🎨 Cover art appears** — Gemini Flash Image generates a soft
+1. **The moon asks** — "ما القصة التي تريد سماعها الليلة؟" / "What story
+   shall I tell you tonight?" Tap a suggestion chip or type your own.
+2. **The AI thinks** — a converse endpoint reads what you said and
+   decides if there's enough to write a great story or if it should
+   ask **one** smart follow-up. Never more than two questions total.
+3. **The story is written** — Gemini 2.5 Pro writes a 5-paragraph
+   Arabic bedtime tale in the cadence of a traditional storybook,
+   threading your idea into the moral.
+4. **Cover art appears** — Gemini Flash Image generates a soft
    cartoon illustration to match.
 5. **🔊 Listen** — tap the button and Munsit's Arwa voice (fusha /
    Modern Standard Arabic) reads the story to you.
@@ -76,22 +78,20 @@ the client bundle.
 kids-story-game/
 ├─ app/
 │  ├─ api/
+│  │  ├─ converse/route.ts   ← LLM-driven conversation orchestrator
 │  │  ├─ story/route.ts      ← OpenRouter chat completions (Arabic)
 │  │  ├─ image/route.ts      ← OpenRouter image gen (cover)
 │  │  └─ narrate/route.ts    ← Munsit text-to-speech (WAV)
 │  ├─ components/
 │  │  ├─ NightSky.tsx        ← Stars, moon, drifting clouds
 │  │  ├─ ShootingStar.tsx    ← Provider + trigger for delight moments
-│  │  ├─ StepPicker.tsx      ← One of 5 picker steps
-│  │  ├─ ChoiceCard.tsx      ← Single tappable card
-│  │  ├─ IdeaInput.tsx       ← Optional text box
+│  │  ├─ StoryFriend.tsx     ← The pink-moon character + speech bubble
+│  │  ├─ ChatInput.tsx       ← Suggestion chips + text input + send
 │  │  ├─ LoadingScreen.tsx   ← Pulsing pink moon
 │  │  └─ StoryDisplay.tsx    ← Cover + RTL Arabic + Listen button
 │  ├─ globals.css            ← All the visual theme lives here
 │  ├─ layout.tsx             ← Loads fonts, mounts NightSky
 │  └─ page.tsx               ← Top-level flow state machine
-├─ lib/
-│  └─ choices.ts             ← Hero/setting/problem/helper/ending data
 ├─ CLAUDE.md                 ← Notes for AI assistants
 └─ .env.example              ← Variable names + sensible defaults
 ```
@@ -115,9 +115,13 @@ Six colors, locked. Add a new shade only if you really need it.
 
 ## 🔧 Customizing
 
-**Add new picker choices:** edit `lib/choices.ts` — pick an emoji, a
-label, and a noun phrase. Done. Heroes also need a pronoun and
-possessive for grammar correctness.
+**Tweak the moon's voice:** edit the system prompt in
+`app/api/converse/route.ts` to change how the moon talks, what
+counts as "enough info," or to harden the guardrails.
+
+**Tweak the first-question chips:** they're hardcoded in
+`app/page.tsx` (`DEFAULT_FIRST_CHIPS`). Change them to seed different
+story moods.
 
 **Try a different LLM:** swap `OPENROUTER_STORY_MODEL` in
 `.env.local`. Anything OpenRouter routes to that supports JSON output
