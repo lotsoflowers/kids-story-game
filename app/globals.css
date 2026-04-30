@@ -130,8 +130,13 @@ button {
   border-radius: 28px;
   padding: 32px clamp(20px, 5vw, 48px);
   box-shadow: var(--card-shadow);
-  font-size: 1.35rem;
-  line-height: 1.7;
+  font-size: 1.55rem;
+  line-height: 2;
+  font-family: "Cairo", "Noto Naskh Arabic", "Segoe UI", "Tahoma", sans-serif;
+}
+
+.story[dir="rtl"] {
+  text-align: right;
 }
 
 .story p {
@@ -140,6 +145,138 @@ button {
 
 .story p:last-child {
   margin-bottom: 0;
+}
+
+.story-title {
+  font-size: 2rem;
+  margin: 0 0 20px;
+  color: var(--accent);
+}
+
+.cover {
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  border-radius: 28px;
+  overflow: hidden;
+  margin: 0 0 20px;
+  background: linear-gradient(135deg, #ffe4e6, #dbeafe);
+  box-shadow: var(--card-shadow);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cover-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.cover-placeholder {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-family: "Cairo", "Noto Naskh Arabic", sans-serif;
+  font-size: 1.1rem;
+  color: var(--ink-soft);
+}
+
+.cover-error {
+  font-size: 1.2rem;
+}
+
+.cover-spinner {
+  width: 26px;
+  height: 26px;
+  border: 4px solid var(--accent-soft);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.9s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.idea-box {
+  width: 100%;
+  min-height: 140px;
+  border-radius: 20px;
+  border: 4px solid #ffe1ec;
+  background: white;
+  padding: 18px 20px;
+  font-family: inherit;
+  font-size: 1.15rem;
+  line-height: 1.6;
+  resize: vertical;
+  box-shadow: var(--card-shadow);
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.idea-box:focus {
+  border-color: var(--accent);
+}
+
+.idea-box::placeholder {
+  font-family: "Cairo", "Noto Naskh Arabic", sans-serif;
+  color: #b9b1c7;
+}
+
+.loading {
+  text-align: center;
+  padding: 60px 20px;
+}
+
+.loading-orb {
+  width: 120px;
+  height: 120px;
+  margin: 0 auto 24px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, #ffd5e3, var(--accent));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 4rem;
+  animation: pulse 1.6s ease-in-out infinite;
+  box-shadow: 0 0 40px rgba(255, 111, 163, 0.4);
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.08);
+  }
+}
+
+.loading-text {
+  font-family: "Cairo", "Noto Naskh Arabic", sans-serif;
+  font-size: 1.4rem;
+  color: var(--ink);
+  margin: 0;
+}
+
+.error-text {
+  text-align: center;
+  font-size: 1.1rem;
+  color: #b03050;
+  background: #ffe4e6;
+  border-radius: 16px;
+  padding: 14px 18px;
+  margin: 16px auto;
+  max-width: 600px;
+}
+
+.audio-player {
+  display: block;
+  width: 100%;
+  margin: 20px auto 0;
+  max-width: 520px;
 }
 
 .story-emoji-row {
