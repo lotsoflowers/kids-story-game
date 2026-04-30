@@ -1,12 +1,13 @@
 /* ============================================================
-   Kids Story Builder — Night Sky theme
-   Palette is tightly constrained to the 6 user-supplied tokens
-   plus two darker derivations of #5FA5BA used only for the sky
-   gradient depth at the very top of the viewport.
+   Kids Story Builder — dual theme (night + day)
+   The same component CSS rules read from CSS custom properties
+   that swap based on `data-theme` on the <html> element. All
+   theme-aware values transition smoothly so the toggle feels
+   like a real time-of-day shift.
    ============================================================ */
 
+/* Default tokens — overridden per theme below. */
 :root {
-  /* Palette */
   --pale-pink: #fee1df;
   --coral: #feb4b3;
   --yellow: #f8d741;
@@ -14,25 +15,61 @@
   --teal-light: #aadfe1;
   --teal-deep: #5fa5ba;
 
-  /* Sky depth — derived from teal-deep, darker for the top of the
-     viewport so it reads "deep night" while the horizon stays in
-     the user's palette. */
-  --sky-darkest: #1a3a47;
-  --sky-deeper: #2c5867;
-
-  /* Text on dark sky */
   --moonlight: #ffffff;
-  --on-sky-soft: #fee1df;
-  --on-sky-mute: #aadfe1;
-
-  /* Text on pastel cards */
-  --on-card: #1a3a47;
-  --on-card-soft: #5fa5ba;
-
-  /* Shadows tuned for warm cards over deep sky */
+  --card-bg: rgba(255, 255, 255, 0.96);
   --card-shadow: 0 6px 0 rgba(26, 58, 71, 0.18), 0 12px 24px rgba(0, 0, 0, 0.18);
   --card-shadow-hover: 0 10px 0 rgba(26, 58, 71, 0.22), 0 18px 32px rgba(0, 0, 0, 0.22);
 }
+
+/* ---- NIGHT ---- */
+[data-theme="night"] {
+  --sky-1: #050d1a;            /* near-black navy at very top */
+  --sky-2: #0f2540;            /* deep navy */
+  --sky-3: #1a3a5e;            /* mid navy */
+  --sky-4: #2c5867;            /* horizon, leans teal */
+  --sky-glow: rgba(170, 223, 225, 0.18);
+
+  --orb-color: var(--pale-pink);
+  --orb-shadow-1: rgba(254, 225, 223, 0.55);
+  --orb-shadow-2: rgba(254, 180, 179, 0.4);
+
+  --on-sky: var(--moonlight);
+  --on-sky-soft: var(--pale-pink);
+  --on-card: #1a3a47;
+  --on-card-soft: #5fa5ba;
+
+  --cloud-tint: rgba(254, 180, 179, 0.18);
+  --star-opacity: 1;
+  --moon-opacity: 1;
+  --sun-opacity: 0;
+}
+
+/* ---- DAY ---- */
+[data-theme="day"] {
+  --sky-1: #aadfe1;            /* palette teal-light */
+  --sky-2: #d3edee;            /* lighter wash, mid */
+  --sky-3: #fee1df;            /* pale pink near horizon */
+  --sky-4: #feb4b3;            /* warm coral horizon */
+  --sky-glow: rgba(248, 215, 65, 0.25);
+
+  --orb-color: var(--yellow);
+  --orb-shadow-1: rgba(248, 215, 65, 0.7);
+  --orb-shadow-2: rgba(254, 180, 179, 0.4);
+
+  --on-sky: #1a3a47;
+  --on-sky-soft: #1a3a47;
+  --on-card: #1a3a47;
+  --on-card-soft: #5fa5ba;
+
+  --cloud-tint: rgba(255, 255, 255, 0.7);
+  --star-opacity: 0;
+  --moon-opacity: 0;
+  --sun-opacity: 1;
+}
+
+/* ============================================================
+   Base
+   ============================================================ */
 
 * {
   box-sizing: border-box;
@@ -43,12 +80,17 @@ body {
   margin: 0;
   padding: 0;
   min-height: 100%;
-  color: var(--moonlight);
-  font-family: "Fredoka", "Comic Sans MS", "Trebuchet MS", system-ui, sans-serif;
-  font-weight: 500;
+  color: var(--on-sky);
+  font-family: "Cairo", "Noto Naskh Arabic", "Segoe UI", "Tahoma", system-ui, sans-serif;
+  font-weight: 600;
   -webkit-font-smoothing: antialiased;
-  background: var(--sky-darkest);
+  background: var(--sky-1);
   overflow-x: hidden;
+  transition: color 1s ease, background 2s ease;
+}
+
+html[dir="rtl"] body {
+  text-align: right;
 }
 
 button {
@@ -57,62 +99,111 @@ button {
 }
 
 /* ============================================================
-   Night sky background — fixed, behind all content
+   Sky background — fixed, behind all content
    ============================================================ */
 
-.night-sky {
+.sky {
   position: fixed;
   inset: 0;
   z-index: 0;
   pointer-events: none;
   background:
-    radial-gradient(ellipse 90% 60% at 50% 100%, rgba(170, 223, 225, 0.35), transparent 70%),
+    radial-gradient(ellipse 90% 60% at 50% 100%, var(--sky-glow), transparent 70%),
     linear-gradient(
       to bottom,
-      var(--sky-darkest) 0%,
-      var(--sky-deeper) 35%,
-      var(--teal-deep) 75%,
-      var(--teal-light) 100%
+      var(--sky-1) 0%,
+      var(--sky-2) 30%,
+      var(--sky-3) 65%,
+      var(--sky-4) 100%
     );
   overflow: hidden;
+  transition: background 2.2s ease;
 }
 
+/* Moon — visible at night, hidden in day */
 .moon {
   position: absolute;
   top: 6%;
-  right: 8%;
-  width: 90px;
-  height: 90px;
+  inset-inline-end: 8%;
+  width: 100px;
+  height: 100px;
   border-radius: 50%;
   background: var(--pale-pink);
   box-shadow:
     inset -8px -10px 0 rgba(254, 180, 179, 0.35),
-    0 0 60px rgba(254, 225, 223, 0.55);
+    0 0 60px var(--orb-shadow-1);
+  opacity: var(--moon-opacity);
+  transform: scale(var(--moon-opacity));
+  transition: opacity 1.6s ease, transform 1.6s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .moon-glow {
   position: absolute;
-  inset: -30px;
+  inset: -32px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(254, 225, 223, 0.35), transparent 70%);
-  animation: moon-glow 6s ease-in-out infinite;
+  background: radial-gradient(circle, rgba(254, 225, 223, 0.4), transparent 70%);
+  animation: orb-glow 6s ease-in-out infinite;
 }
 
-@keyframes moon-glow {
-  0%, 100% {
-    opacity: 0.6;
-    transform: scale(1);
-  }
-  50% {
-    opacity: 0.95;
-    transform: scale(1.08);
-  }
+/* Sun — visible in day, hidden at night */
+.sun {
+  position: absolute;
+  top: 6%;
+  inset-inline-end: 8%;
+  width: 110px;
+  height: 110px;
+  border-radius: 50%;
+  background: var(--yellow);
+  box-shadow:
+    inset -8px -10px 0 rgba(232, 180, 25, 0.35),
+    0 0 80px rgba(248, 215, 65, 0.7),
+    0 0 160px rgba(248, 215, 65, 0.4);
+  opacity: var(--sun-opacity);
+  transform: scale(var(--sun-opacity));
+  transition: opacity 1.6s ease, transform 1.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.sun-rays {
+  position: absolute;
+  inset: -50px;
+  border-radius: 50%;
+  background: conic-gradient(
+    from 0deg,
+    rgba(248, 215, 65, 0.4),
+    transparent 8%,
+    rgba(248, 215, 65, 0.4) 12%,
+    transparent 20%,
+    rgba(248, 215, 65, 0.4) 24%,
+    transparent 32%,
+    rgba(248, 215, 65, 0.4) 36%,
+    transparent 44%,
+    rgba(248, 215, 65, 0.4) 48%,
+    transparent 56%,
+    rgba(248, 215, 65, 0.4) 60%,
+    transparent 68%,
+    rgba(248, 215, 65, 0.4) 72%,
+    transparent 80%,
+    rgba(248, 215, 65, 0.4) 84%,
+    transparent 92%,
+    rgba(248, 215, 65, 0.4) 96%,
+    transparent 100%
+  );
+  filter: blur(2px);
+  animation: spin 14s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes orb-glow {
+  0%, 100% { opacity: 0.6; transform: scale(1); }
+  50% { opacity: 0.95; transform: scale(1.08); }
 }
 
 .star {
   position: absolute;
   border-radius: 50%;
   animation: twinkle 3s ease-in-out infinite;
+  opacity: var(--star-opacity);
+  transition: opacity 1.6s ease;
 }
 
 .star-yellow {
@@ -126,62 +217,45 @@ button {
 }
 
 @keyframes twinkle {
-  0%, 100% {
-    opacity: 0.3;
-    transform: scale(0.8);
-  }
-  50% {
-    opacity: 1;
-    transform: scale(1.2);
-  }
+  0%, 100% { transform: scale(0.8); }
+  50% { transform: scale(1.2); }
 }
 
 .cloud {
   position: absolute;
   width: 180px;
   height: 60px;
-  background: rgba(254, 180, 179, 0.18);
+  background: var(--cloud-tint);
   border-radius: 60px;
   filter: blur(12px);
   animation: drift linear infinite;
+  transition: background 2s ease;
 }
 
 .cloud::before,
 .cloud::after {
   content: "";
   position: absolute;
-  background: rgba(254, 180, 179, 0.18);
+  background: var(--cloud-tint);
   border-radius: 50%;
   filter: blur(4px);
+  transition: background 2s ease;
 }
 
-.cloud::before {
-  width: 80px;
-  height: 80px;
-  top: -28px;
-  left: 30px;
-}
-
-.cloud::after {
-  width: 90px;
-  height: 90px;
-  top: -24px;
-  right: 30px;
-}
+.cloud::before { width: 80px; height: 80px; top: -28px; left: 30px; }
+.cloud::after  { width: 90px; height: 90px; top: -24px; right: 30px; }
 
 @keyframes drift {
-  from {
-    transform: translateX(-220px) scale(var(--cloud-scale, 1));
-    left: 0;
-  }
-  to {
-    transform: translateX(calc(100vw + 200px)) scale(var(--cloud-scale, 1));
-    left: 0;
-  }
+  from { transform: translateX(-220px); left: 0; }
+  to   { transform: translateX(calc(100vw + 200px)); left: 0; }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
 /* ============================================================
-   Shooting star layer — sits above the sky, below content
+   Shooting star layer
    ============================================================ */
 
 .shooting-star-layer {
@@ -192,11 +266,7 @@ button {
   overflow: hidden;
 }
 
-.shooting-star-wrapper {
-  position: absolute;
-  width: 0;
-  height: 0;
-}
+.shooting-star-wrapper { position: absolute; width: 0; height: 0; }
 
 .shooting-star {
   width: 110px;
@@ -220,24 +290,14 @@ button {
 }
 
 @keyframes shoot {
-  0% {
-    transform: translateX(0);
-    opacity: 0;
-  }
-  15% {
-    opacity: 1;
-  }
-  85% {
-    opacity: 1;
-  }
-  100% {
-    transform: translateX(700px);
-    opacity: 0;
-  }
+  0%   { transform: translateX(0); opacity: 0; }
+  15%  { opacity: 1; }
+  85%  { opacity: 1; }
+  100% { transform: translateX(700px); opacity: 0; }
 }
 
 /* ============================================================
-   App layout
+   App layout + top-bar (theme toggle + library button)
    ============================================================ */
 
 .app {
@@ -245,125 +305,445 @@ button {
   z-index: 2;
   max-width: 980px;
   margin: 0 auto;
-  padding: 32px 20px 64px;
+  padding: 16px 20px 64px;
 }
+
+.top-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  gap: 12px;
+}
+
+.top-bar > * { flex-shrink: 0; }
 
 .title {
   text-align: center;
-  font-size: clamp(2rem, 5vw, 3.4rem);
-  font-weight: 700;
-  margin: 8px 0 4px;
+  font-size: clamp(1.8rem, 4.5vw, 3rem);
+  font-weight: 800;
+  margin: 8px 0 20px;
   letter-spacing: -0.5px;
-  color: var(--moonlight);
-  text-shadow: 0 0 24px rgba(254, 225, 223, 0.4);
-}
-
-.subtitle {
-  text-align: center;
-  color: var(--on-sky-soft);
-  font-size: 1.1rem;
-  font-weight: 500;
-  margin: 0 0 28px;
-}
-
-/* Progress dots */
-.progress {
-  display: flex;
-  gap: 10px;
-  justify-content: center;
-  margin-bottom: 28px;
-}
-
-.progress-dot {
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  background: rgba(170, 223, 225, 0.3);
-  transition: transform 0.2s, background 0.2s, box-shadow 0.2s;
-}
-
-.progress-dot.active {
-  background: var(--yellow);
-  box-shadow: 0 0 12px rgba(248, 215, 65, 0.7);
-  transform: scale(1.4);
-}
-
-.progress-dot.done {
-  background: var(--coral);
-  box-shadow: 0 0 8px rgba(254, 180, 179, 0.5);
-}
-
-.step-question {
-  text-align: center;
-  font-size: clamp(1.6rem, 4vw, 2.4rem);
-  font-weight: 700;
-  margin: 8px 0 24px;
-  color: var(--moonlight);
+  color: var(--on-sky);
+  text-shadow: 0 0 24px rgba(254, 225, 223, 0.3);
+  transition: color 1s ease;
 }
 
 /* ============================================================
-   Choice cards — rotate through 3 warm palette colors
+   Theme toggle — sun ↔ moon swap
    ============================================================ */
 
-.choice-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-  gap: 18px;
+.theme-toggle {
+  width: 56px;
+  height: 56px;
+  border: none;
+  border-radius: 50%;
+  background: var(--card-bg);
+  box-shadow: 0 4px 0 rgba(26, 58, 71, 0.18), 0 0 20px var(--orb-shadow-1);
+  font-size: 1.6rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1),
+    box-shadow 0.2s, background 1s ease;
+  position: relative;
+  overflow: hidden;
 }
 
-.choice-card {
+.theme-toggle:hover {
+  transform: translateY(-3px) rotate(15deg);
+  box-shadow: 0 8px 0 rgba(26, 58, 71, 0.22), 0 0 28px var(--orb-shadow-1);
+}
+
+.theme-toggle:active {
+  transform: translateY(2px);
+  box-shadow: 0 2px 0 rgba(26, 58, 71, 0.18);
+}
+
+.theme-toggle .icon {
+  display: inline-block;
+  transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.4s;
+}
+
+[data-theme="night"] .theme-toggle .icon-sun  { opacity: 0; transform: rotate(-180deg) scale(0.3); position: absolute; }
+[data-theme="night"] .theme-toggle .icon-moon { opacity: 1; transform: rotate(0)        scale(1); }
+[data-theme="day"]   .theme-toggle .icon-sun  { opacity: 1; transform: rotate(0)        scale(1); }
+[data-theme="day"]   .theme-toggle .icon-moon { opacity: 0; transform: rotate(180deg)   scale(0.3); position: absolute; }
+
+/* ============================================================
+   Library button (top-bar) + library list view
+   ============================================================ */
+
+.library-btn {
   border: none;
-  border-radius: 28px;
-  padding: 24px 14px 20px;
-  text-align: center;
-  box-shadow: var(--card-shadow);
+  border-radius: 999px;
+  padding: 12px 20px;
+  background: var(--card-bg);
+  color: var(--on-card);
   font-family: inherit;
+  font-size: 1rem;
+  font-weight: 700;
+  box-shadow: 0 4px 0 rgba(26, 58, 71, 0.18);
+  transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1),
+    box-shadow 0.15s;
+  cursor: pointer;
+}
+
+.library-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 0 rgba(26, 58, 71, 0.22);
+}
+
+.library-btn:active {
+  transform: translateY(2px);
+  box-shadow: 0 2px 0 rgba(26, 58, 71, 0.18);
+}
+
+.library-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 18px;
+  margin-top: 24px;
+}
+
+.library-card {
+  background: var(--card-bg);
+  border: none;
+  border-radius: 24px;
+  padding: 0;
+  text-align: start;
+  box-shadow: var(--card-shadow);
+  cursor: pointer;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s;
+  font-family: inherit;
+  color: var(--on-card);
+}
+
+.library-card:hover {
+  transform: translateY(-4px) rotate(-0.5deg);
+  box-shadow: var(--card-shadow-hover);
+}
+
+.library-card-cover {
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  background: linear-gradient(135deg, var(--coral), var(--pale-pink));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 3rem;
+}
+
+.library-card-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.library-card-body {
+  padding: 14px 16px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.library-card-title {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--teal-deep);
+  margin: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.library-card-date {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: rgba(95, 165, 186, 0.7);
+}
+
+.library-empty {
+  text-align: center;
+  padding: 48px 20px;
+  color: var(--on-sky-soft);
   font-size: 1.2rem;
   font-weight: 700;
-  color: var(--on-card);
+}
+
+.library-card-delete {
+  position: absolute;
+  top: 8px;
+  inset-inline-end: 8px;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.92);
+  font-size: 0.95rem;
+  cursor: pointer;
+  box-shadow: 0 2px 0 rgba(26, 58, 71, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.15s, background 0.15s;
+}
+
+.library-card-delete:hover {
   background: var(--coral);
-  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1),
-    box-shadow 0.2s, filter 0.2s;
+  transform: scale(1.1);
 }
 
-.choice-card:nth-child(3n + 1) {
-  background: var(--coral);
-}
-.choice-card:nth-child(3n + 2) {
-  background: var(--soft-green);
-}
-.choice-card:nth-child(3n + 3) {
-  background: var(--pale-pink);
-}
-
-.choice-card:hover,
-.choice-card:focus-visible {
-  transform: translateY(-6px) rotate(-1deg);
-  box-shadow: var(--card-shadow-hover);
-  outline: none;
-  filter: brightness(1.05);
-}
-
-.choice-card:active {
-  transform: translateY(-2px) scale(0.97);
-}
-
-.choice-card.selected {
-  outline: 4px solid var(--yellow);
-  outline-offset: 4px;
-  filter: saturate(1.1);
-}
-
-.choice-card .emoji {
-  display: block;
-  font-size: 4rem;
-  line-height: 1;
-  margin-bottom: 10px;
-  filter: drop-shadow(0 4px 0 rgba(0, 0, 0, 0.1));
+.library-card-wrap {
+  position: relative;
 }
 
 /* ============================================================
-   Buttons — primary (yellow moon) and secondary (coral)
+   Conversational chat stage — moon friend + speech bubble + input
+   ============================================================ */
+
+.chat-stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 28px;
+  padding-top: 12px;
+}
+
+.story-friend {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+  width: 100%;
+  max-width: 620px;
+}
+
+.friend-orb {
+  position: relative;
+  width: 160px;
+  height: 160px;
+  border-radius: 50%;
+  background: var(--orb-color);
+  box-shadow:
+    inset -14px -16px 0 rgba(0, 0, 0, 0.08),
+    0 0 80px var(--orb-shadow-1),
+    0 0 140px var(--orb-shadow-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: friend-bob 4s ease-in-out infinite;
+  transition: background 1.6s ease, box-shadow 1.6s ease;
+}
+
+@keyframes friend-bob {
+  0%, 100% { transform: translateY(0) rotate(-2deg); }
+  50%      { transform: translateY(-8px) rotate(2deg); }
+}
+
+.friend-orb-glow {
+  position: absolute;
+  inset: -40px;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--sky-glow), transparent 70%);
+  animation: orb-glow 6s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.friend-face {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 22px;
+  width: 100%;
+}
+
+.friend-eye {
+  width: 14px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--on-card);
+  animation: friend-blink 5s ease-in-out infinite;
+}
+
+@keyframes friend-blink {
+  0%, 92%, 100% { transform: scaleY(1); }
+  94%, 96%      { transform: scaleY(0.1); }
+}
+
+.friend-mouth {
+  position: absolute;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 28px;
+  height: 16px;
+  border: 4px solid var(--on-card);
+  border-top: none;
+  border-radius: 0 0 28px 28px;
+  background: transparent;
+}
+
+.friend-bubble {
+  position: relative;
+  background: var(--card-bg);
+  border-radius: 24px;
+  padding: 22px 26px;
+  font-size: 1.45rem;
+  font-weight: 700;
+  line-height: 1.5;
+  color: var(--on-card);
+  box-shadow: var(--card-shadow);
+  max-width: 560px;
+  text-align: center;
+  animation: bubble-pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes bubble-pop {
+  from { opacity: 0; transform: translateY(8px) scale(0.92); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.friend-bubble::before {
+  content: "";
+  position: absolute;
+  top: -14px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 14px solid transparent;
+  border-right: 14px solid transparent;
+  border-bottom: 14px solid var(--card-bg);
+}
+
+.friend-bubble.thinking { padding: 22px 30px; }
+
+.thinking-dots {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.thinking-dots span {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--coral);
+  animation: dot-bounce 1.2s ease-in-out infinite;
+}
+
+.thinking-dots span:nth-child(2) { animation-delay: 0.15s; }
+.thinking-dots span:nth-child(3) { animation-delay: 0.3s; }
+
+@keyframes dot-bounce {
+  0%, 80%, 100% { transform: translateY(0) scale(0.85); opacity: 0.5; }
+  40%           { transform: translateY(-10px) scale(1.1); opacity: 1; }
+}
+
+/* ============================================================
+   Chat input — chips + textarea + send button
+   ============================================================ */
+
+.chat-input {
+  width: 100%;
+  max-width: 620px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+}
+
+.chip {
+  border: none;
+  border-radius: 999px;
+  padding: 12px 20px;
+  font-family: inherit;
+  font-size: 1rem;
+  font-weight: 700;
+  background: var(--card-bg);
+  color: var(--on-card);
+  box-shadow: 0 4px 0 rgba(26, 58, 71, 0.18);
+  transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1),
+    box-shadow 0.15s, background 0.15s;
+  cursor: pointer;
+}
+
+.chip:hover {
+  transform: translateY(-2px);
+  background: var(--pale-pink);
+  box-shadow: 0 6px 0 rgba(26, 58, 71, 0.22);
+}
+
+.chip:active { transform: translateY(2px); box-shadow: 0 2px 0 rgba(26, 58, 71, 0.18); }
+.chip:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.input-row {
+  display: flex;
+  gap: 12px;
+  align-items: stretch;
+}
+
+.chat-textarea {
+  flex: 1;
+  min-height: 60px;
+  max-height: 160px;
+  border-radius: 22px;
+  border: 4px solid rgba(254, 225, 223, 0.45);
+  background: var(--card-bg);
+  padding: 16px 20px;
+  font-family: inherit;
+  font-size: 1.15rem;
+  line-height: 1.5;
+  color: var(--on-card);
+  resize: none;
+  box-shadow: var(--card-shadow);
+  outline: none;
+  transition: border-color 0.15s, transform 0.15s, background 1s ease;
+}
+
+.chat-textarea:focus { border-color: var(--yellow); }
+
+.chat-textarea::placeholder {
+  color: rgba(95, 165, 186, 0.65);
+  font-family: inherit;
+}
+
+.chat-textarea:disabled { opacity: 0.5; }
+
+.send-btn {
+  width: 64px;
+  border: none;
+  border-radius: 22px;
+  background: var(--yellow);
+  color: var(--on-card);
+  font-size: 1.6rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 5px 0 #c8a818, 0 0 22px rgba(248, 215, 65, 0.4);
+  transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1),
+    box-shadow 0.15s;
+}
+
+.send-btn:hover { transform: translateY(-3px); box-shadow: 0 8px 0 #c8a818, 0 0 28px rgba(248, 215, 65, 0.6); }
+.send-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 #c8a818; }
+.send-btn:disabled { opacity: 0.4; cursor: not-allowed; filter: saturate(0.5); }
+
+/* ============================================================
+   Buttons — primary (yellow) and secondary (coral)
    ============================================================ */
 
 .btn {
@@ -377,38 +757,20 @@ button {
   color: var(--on-card);
   box-shadow: 0 5px 0 #c8a818, 0 0 22px rgba(248, 215, 65, 0.45);
   transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1),
-    box-shadow 0.15s, filter 0.2s;
+    box-shadow 0.15s;
 }
 
-.btn:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 8px 0 #c8a818, 0 0 28px rgba(248, 215, 65, 0.6);
-  filter: brightness(1.05);
-}
-
-.btn:active {
-  transform: translateY(2px);
-  box-shadow: 0 2px 0 #c8a818, 0 0 16px rgba(248, 215, 65, 0.4);
-}
-
-.btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  filter: saturate(0.6);
-}
+.btn:hover  { transform: translateY(-3px); box-shadow: 0 8px 0 #c8a818, 0 0 28px rgba(248, 215, 65, 0.6); }
+.btn:active { transform: translateY(2px); box-shadow: 0 2px 0 #c8a818, 0 0 16px rgba(248, 215, 65, 0.4); }
+.btn:disabled { opacity: 0.6; cursor: not-allowed; filter: saturate(0.6); }
 
 .btn.secondary {
   background: var(--coral);
   box-shadow: 0 5px 0 #c8867f, 0 0 18px rgba(254, 180, 179, 0.35);
 }
 
-.btn.secondary:hover {
-  box-shadow: 0 8px 0 #c8867f, 0 0 24px rgba(254, 180, 179, 0.5);
-}
-
-.btn.secondary:active {
-  box-shadow: 0 2px 0 #c8867f, 0 0 12px rgba(254, 180, 179, 0.3);
-}
+.btn.secondary:hover  { box-shadow: 0 8px 0 #c8867f, 0 0 24px rgba(254, 180, 179, 0.5); }
+.btn.secondary:active { box-shadow: 0 2px 0 #c8867f, 0 0 12px rgba(254, 180, 179, 0.3); }
 
 .back-link {
   display: inline-block;
@@ -417,55 +779,20 @@ button {
   color: var(--on-sky-soft);
   font-family: inherit;
   font-size: 1rem;
-  font-weight: 500;
+  font-weight: 600;
   margin-bottom: 12px;
   text-decoration: underline;
   text-underline-offset: 4px;
+  cursor: pointer;
 }
 
-.back-link:hover {
-  color: var(--moonlight);
-}
+.back-link:hover { color: var(--on-sky); }
 
 /* ============================================================
-   Idea text box
+   Loading screen
    ============================================================ */
 
-.idea-box {
-  width: 100%;
-  min-height: 150px;
-  border-radius: 24px;
-  border: 4px solid rgba(254, 225, 223, 0.4);
-  background: rgba(255, 255, 255, 0.95);
-  padding: 20px 22px;
-  font-family: inherit;
-  font-size: 1.15rem;
-  line-height: 1.6;
-  color: var(--on-card);
-  resize: vertical;
-  box-shadow: var(--card-shadow);
-  outline: none;
-  transition: border-color 0.15s, transform 0.15s;
-}
-
-.idea-box:focus {
-  border-color: var(--yellow);
-  transform: translateY(-2px);
-}
-
-.idea-box::placeholder {
-  font-family: "Cairo", "Fredoka", sans-serif;
-  color: rgba(95, 165, 186, 0.7);
-}
-
-/* ============================================================
-   Loading screen — pulsing pink moon
-   ============================================================ */
-
-.loading {
-  text-align: center;
-  padding: 80px 20px;
-}
+.loading { text-align: center; padding: 80px 20px; }
 
 .loading-orb {
   width: 140px;
@@ -477,23 +804,16 @@ button {
   align-items: center;
   justify-content: center;
   font-size: 4.5rem;
-  animation: orb-pulse 2s ease-in-out infinite;
+  animation: loading-pulse 2s ease-in-out infinite;
   box-shadow: 0 0 60px rgba(254, 225, 223, 0.7), 0 0 120px rgba(254, 180, 179, 0.4);
 }
 
-@keyframes orb-pulse {
-  0%, 100% {
-    transform: scale(1);
-    box-shadow: 0 0 60px rgba(254, 225, 223, 0.7), 0 0 120px rgba(254, 180, 179, 0.4);
-  }
-  50% {
-    transform: scale(1.1);
-    box-shadow: 0 0 90px rgba(254, 225, 223, 0.9), 0 0 160px rgba(254, 180, 179, 0.55);
-  }
+@keyframes loading-pulse {
+  0%, 100% { transform: scale(1);    box-shadow: 0 0 60px rgba(254, 225, 223, 0.7), 0 0 120px rgba(254, 180, 179, 0.4); }
+  50%      { transform: scale(1.1);  box-shadow: 0 0 90px rgba(254, 225, 223, 0.9), 0 0 160px rgba(254, 180, 179, 0.55); }
 }
 
 .loading-text {
-  font-family: "Cairo", "Fredoka", sans-serif;
   font-size: 1.5rem;
   font-weight: 700;
   color: var(--on-sky-soft);
@@ -501,15 +821,10 @@ button {
 }
 
 /* ============================================================
-   Story display — cover, RTL Arabic article, audio
+   Story display
    ============================================================ */
 
-.story-emoji-row {
-  text-align: center;
-  font-size: 2.6rem;
-  margin-bottom: 14px;
-  letter-spacing: 8px;
-}
+.story-emoji-row { text-align: center; font-size: 2.6rem; margin-bottom: 14px; letter-spacing: 8px; }
 
 .cover {
   width: 100%;
@@ -525,25 +840,17 @@ button {
   border: 4px solid rgba(254, 225, 223, 0.4);
 }
 
-.cover-image {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
+.cover-image { width: 100%; height: 100%; object-fit: cover; display: block; }
 
 .cover-placeholder {
   display: flex;
   align-items: center;
   gap: 14px;
-  font-family: "Cairo", "Fredoka", sans-serif;
   font-size: 1.15rem;
   color: var(--on-card);
 }
 
-.cover-error {
-  font-size: 1.2rem;
-}
+.cover-error { font-size: 1.2rem; }
 
 .cover-spinner {
   width: 28px;
@@ -554,34 +861,20 @@ button {
   animation: spin 0.9s linear infinite;
 }
 
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
 .story {
-  background: rgba(255, 255, 255, 0.95);
+  background: var(--card-bg);
   border-radius: 28px;
   padding: 36px clamp(20px, 5vw, 52px);
   box-shadow: var(--card-shadow);
   font-size: 1.55rem;
   line-height: 2;
   color: var(--on-card);
-  font-family: "Cairo", "Noto Naskh Arabic", "Segoe UI", "Tahoma", sans-serif;
 }
 
-.story[dir="rtl"] {
-  text-align: right;
-}
+.story[dir="rtl"] { text-align: right; }
 
-.story p {
-  margin: 0 0 20px;
-}
-
-.story p:last-child {
-  margin-bottom: 0;
-}
+.story p { margin: 0 0 20px; }
+.story p:last-child { margin-bottom: 0; }
 
 .story-title {
   font-size: 2.2rem;
@@ -608,7 +901,7 @@ button {
 .error-text {
   text-align: center;
   font-size: 1.1rem;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--on-card);
   background: var(--coral);
   border-radius: 18px;
@@ -616,292 +909,4 @@ button {
   margin: 18px auto;
   max-width: 600px;
   box-shadow: var(--card-shadow);
-}
-
-/* ============================================================
-   Conversational chat stage — moon friend + speech bubble + input
-   ============================================================ */
-
-.chat-stage {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 28px;
-  padding-top: 24px;
-}
-
-.story-friend {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 24px;
-  width: 100%;
-  max-width: 620px;
-}
-
-.friend-moon {
-  position: relative;
-  width: 160px;
-  height: 160px;
-  border-radius: 50%;
-  background: var(--pale-pink);
-  box-shadow:
-    inset -14px -16px 0 rgba(254, 180, 179, 0.35),
-    0 0 80px rgba(254, 225, 223, 0.7),
-    0 0 140px rgba(254, 180, 179, 0.4);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  animation: friend-bob 4s ease-in-out infinite;
-}
-
-@keyframes friend-bob {
-  0%, 100% {
-    transform: translateY(0) rotate(-2deg);
-  }
-  50% {
-    transform: translateY(-8px) rotate(2deg);
-  }
-}
-
-.friend-moon-glow {
-  position: absolute;
-  inset: -40px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(254, 225, 223, 0.4), transparent 70%);
-  animation: moon-glow 6s ease-in-out infinite;
-  pointer-events: none;
-}
-
-.friend-face {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 22px;
-  width: 100%;
-}
-
-.friend-eye {
-  width: 14px;
-  height: 18px;
-  border-radius: 50%;
-  background: var(--on-card);
-  animation: friend-blink 5s ease-in-out infinite;
-}
-
-@keyframes friend-blink {
-  0%, 92%, 100% {
-    transform: scaleY(1);
-  }
-  94%, 96% {
-    transform: scaleY(0.1);
-  }
-}
-
-.friend-mouth {
-  position: absolute;
-  bottom: 30px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 28px;
-  height: 16px;
-  border: 4px solid var(--on-card);
-  border-top: none;
-  border-radius: 0 0 28px 28px;
-  background: transparent;
-}
-
-.friend-bubble {
-  position: relative;
-  background: rgba(255, 255, 255, 0.96);
-  border-radius: 24px;
-  padding: 22px 26px;
-  font-family: "Cairo", "Fredoka", sans-serif;
-  font-size: 1.45rem;
-  font-weight: 700;
-  line-height: 1.5;
-  color: var(--on-card);
-  box-shadow: var(--card-shadow);
-  max-width: 560px;
-  text-align: center;
-  animation: bubble-pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-@keyframes bubble-pop {
-  from {
-    opacity: 0;
-    transform: translateY(8px) scale(0.92);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-.friend-bubble::before {
-  content: "";
-  position: absolute;
-  top: -14px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 0;
-  height: 0;
-  border-left: 14px solid transparent;
-  border-right: 14px solid transparent;
-  border-bottom: 14px solid rgba(255, 255, 255, 0.96);
-}
-
-.friend-bubble.thinking {
-  padding: 22px 30px;
-}
-
-.thinking-dots {
-  display: inline-flex;
-  gap: 8px;
-  align-items: center;
-}
-
-.thinking-dots span {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  background: var(--coral);
-  animation: dot-bounce 1.2s ease-in-out infinite;
-}
-
-.thinking-dots span:nth-child(2) {
-  animation-delay: 0.15s;
-}
-
-.thinking-dots span:nth-child(3) {
-  animation-delay: 0.3s;
-}
-
-@keyframes dot-bounce {
-  0%, 80%, 100% {
-    transform: translateY(0) scale(0.85);
-    opacity: 0.5;
-  }
-  40% {
-    transform: translateY(-10px) scale(1.1);
-    opacity: 1;
-  }
-}
-
-/* ============================================================
-   Chat input — chips + textarea + send button
-   ============================================================ */
-
-.chat-input {
-  width: 100%;
-  max-width: 620px;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-
-.chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  justify-content: center;
-}
-
-.chip {
-  border: none;
-  border-radius: 999px;
-  padding: 12px 20px;
-  font-family: "Cairo", "Fredoka", sans-serif;
-  font-size: 1rem;
-  font-weight: 700;
-  background: rgba(255, 255, 255, 0.9);
-  color: var(--on-card);
-  box-shadow: 0 4px 0 rgba(26, 58, 71, 0.18);
-  transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1),
-    box-shadow 0.15s, background 0.15s;
-  cursor: pointer;
-}
-
-.chip:hover {
-  transform: translateY(-2px);
-  background: var(--pale-pink);
-  box-shadow: 0 6px 0 rgba(26, 58, 71, 0.22);
-}
-
-.chip:active {
-  transform: translateY(2px);
-  box-shadow: 0 2px 0 rgba(26, 58, 71, 0.18);
-}
-
-.chip:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.input-row {
-  display: flex;
-  gap: 12px;
-  align-items: stretch;
-}
-
-.chat-textarea {
-  flex: 1;
-  min-height: 60px;
-  max-height: 160px;
-  border-radius: 22px;
-  border: 4px solid rgba(254, 225, 223, 0.45);
-  background: rgba(255, 255, 255, 0.95);
-  padding: 16px 20px;
-  font-family: "Cairo", "Fredoka", sans-serif;
-  font-size: 1.15rem;
-  line-height: 1.5;
-  color: var(--on-card);
-  resize: none;
-  box-shadow: var(--card-shadow);
-  outline: none;
-  transition: border-color 0.15s, transform 0.15s;
-}
-
-.chat-textarea:focus {
-  border-color: var(--yellow);
-}
-
-.chat-textarea::placeholder {
-  color: rgba(95, 165, 186, 0.65);
-  font-family: "Cairo", "Fredoka", sans-serif;
-}
-
-.chat-textarea:disabled {
-  opacity: 0.5;
-}
-
-.send-btn {
-  width: 64px;
-  border: none;
-  border-radius: 22px;
-  background: var(--yellow);
-  color: var(--on-card);
-  font-size: 1.6rem;
-  font-weight: 700;
-  cursor: pointer;
-  box-shadow: 0 5px 0 #c8a818, 0 0 22px rgba(248, 215, 65, 0.4);
-  transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1),
-    box-shadow 0.15s, filter 0.15s;
-}
-
-.send-btn:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 8px 0 #c8a818, 0 0 28px rgba(248, 215, 65, 0.6);
-}
-
-.send-btn:active {
-  transform: translateY(2px);
-  box-shadow: 0 2px 0 #c8a818;
-}
-
-.send-btn:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-  filter: saturate(0.5);
 }

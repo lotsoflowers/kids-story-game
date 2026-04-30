@@ -11,7 +11,6 @@ type Props = {
   imageLoading: boolean;
   imageError: string | null;
   onStartOver: () => void;
-  onChange: () => void;
 };
 
 export function StoryDisplay({
@@ -22,7 +21,6 @@ export function StoryDisplay({
   imageLoading,
   imageError,
   onStartOver,
-  onChange,
 }: Props) {
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [audioLoading, setAudioLoading] = useState(false);
@@ -101,13 +99,10 @@ export function StoryDisplay({
           onClick={handleListen}
           disabled={audioLoading}
         >
-          {audioLoading ? "...جاري التحميل" : audioUrl ? "▶ Listen again" : "🔊 Listen"}
+          {audioLoading ? "...جاري التحميل" : audioUrl ? "▶ استمع مرة أخرى" : "🔊 استمع"}
         </button>
         <button type="button" className="btn secondary" onClick={onStartOver}>
-          Make a new story
-        </button>
-        <button type="button" className="btn secondary" onClick={onChange}>
-          Change something
+          ✨ قصة جديدة
         </button>
       </div>
 

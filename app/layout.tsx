@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import { NightSky } from "./components/NightSky";
+import { Sky } from "./components/Sky";
 import { ShootingStarProvider } from "./components/ShootingStar";
+import { ThemeProvider, THEME_BOOTSTRAP_SCRIPT } from "@/lib/theme";
 
 export const metadata: Metadata = {
-  title: "Story Builder",
-  description: "Build your own silly, brave, or happy story!",
+  title: "صانع القصص",
+  description: "اصنع قصة سحرية لك ولأطفالك في دقيقة واحدة!",
 };
 
 export default function RootLayout({
@@ -14,18 +15,21 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="ar" dir="rtl">
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
         <link
-          href="https://fonts.googleapis.com/css2?family=Cairo:wght@500;700;800&family=Fredoka:wght@500;600;700&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Cairo:wght@500;600;700;800&display=swap"
           rel="stylesheet"
         />
+        <script dangerouslySetInnerHTML={{ __html: THEME_BOOTSTRAP_SCRIPT }} />
       </head>
       <body>
-        <NightSky />
-        <ShootingStarProvider>{children}</ShootingStarProvider>
+        <ThemeProvider>
+          <Sky />
+          <ShootingStarProvider>{children}</ShootingStarProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

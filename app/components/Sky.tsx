@@ -1,6 +1,8 @@
-// Hardcoded star + cloud positions so SSR and client render identically
-// (no Math.random() during render — that would cause hydration mismatches).
-// Positions and sizes were eyeballed for a balanced scattered feel.
+// Both day and night chrome live here. Stars + moon are visible only
+// when [data-theme="night"] (driven by CSS opacity tokens), and the
+// sun is visible only when [data-theme="day"]. Clouds are visible in
+// both with theme-tinted color. Positions are hardcoded so SSR and
+// client agree on layout.
 
 const stars: Array<{ x: number; y: number; size: number; delay: number; color: "yellow" | "white" }> = [
   { x: 4, y: 8, size: 2, delay: 0.0, color: "yellow" },
@@ -44,20 +46,20 @@ const stars: Array<{ x: number; y: number; size: number; delay: number; color: "
   { x: 89, y: 74, size: 3, delay: 1.8, color: "yellow" },
 ];
 
-// Three soft drifting clouds at different heights and speeds. Negative
-// delays make them appear mid-flight on first paint instead of all
-// queuing up off-screen on the left.
 const clouds = [
   { y: 12, durationS: 80, delayS: -10, scale: 1.0 },
   { y: 42, durationS: 110, delayS: -55, scale: 1.3 },
   { y: 68, durationS: 95, delayS: -30, scale: 0.85 },
 ];
 
-export function NightSky() {
+export function Sky() {
   return (
-    <div className="night-sky" aria-hidden>
+    <div className="sky" aria-hidden>
       <div className="moon">
         <div className="moon-glow" />
+      </div>
+      <div className="sun">
+        <div className="sun-rays" />
       </div>
       {stars.map((s, i) => (
         <span

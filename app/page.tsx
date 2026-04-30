@@ -1,13 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { StoryDisplay } from "./components/StoryDisplay";
 import { LoadingScreen } from "./components/LoadingScreen";
 import { StoryFriend } from "./components/StoryFriend";
 import { ChatInput } from "./components/ChatInput";
+import { ThemeToggle } from "./components/ThemeToggle";
+import { Library } from "./components/Library";
 import { useShootingStar } from "./components/ShootingStar";
+import { SavedStory, newStoryId, saveStory, updateStory } from "@/lib/library";
 
-type Phase = "chat" | "loading" | "story" | "error";
+type Phase = "chat" | "loading" | "story" | "library" | "error";
 
 type Turn = { role: "friend" | "kid"; text: string };
 
@@ -38,10 +41,10 @@ export default function Home() {
   const [imageLoading, setImageLoading] = useState(false);
   const [imageError, setImageError] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [currentStoryId, setCurrentStoryId] = useState<string | null>(null);
 
   const triggerShootingStar = useShootingStar();
 
-  // Always show the latest friend question as the visible bubble.
   const currentQuestion =
     [...history].reverse().find((t) => t.role === "friend")?.text ?? DEFAULT_FIRST_QUESTION;
 
@@ -71,7 +74,7 @@ export default function Home() {
         setChips(Array.isArray(data.chips) ? data.chips.slice(0, 4) : []);
         setThinking(false);
       } else {
-        throw new Error("Unexpected converse response");
+        throw new Error("استجابة غير متوقعة من المساعد");
       }
     } catch (e) {
       setErrorMessage(e instanceof Error ? e.message : "حدث خطأ");
@@ -105,6 +108,23 @@ export default function Home() {
       triggerShootingStar();
       setTimeout(() => triggerShootingStar(), 600);
 
+      // Save to local library immediately. Image will be patched in
+      // when it lands so the library card has a thumbnail.
+      const id = newStoryId();
+      setCurrentStoryId(id);
+      const saved: SavedStory = {
+        id,
+        title: data.title,
+        paragraphs: data.paragraphs,
+        imagePrompt: data.imagePrompt,
+        imageUrl: null,
+        storyPrompt,
+        createdAt: Date.now(),
+      };
+      saveStory(saved).catch((err) => {
+        console.warn("library save failed", err);
+      });
+
       if (data.imagePrompt) {
         setImageLoading(true);
         fetch("/api/image", {
@@ -119,9 +139,10 @@ export default function Home() {
             }
             const j = await r.json();
             setImageUrl(j.imageUrl);
+            updateStory(id, { imageUrl: j.imageUrl }).catch(() => {});
           })
           .catch((e: unknown) => {
-            setImageError(e instanceof Error ? e.message : "Image error");
+            setImageError(e instanceof Error ? e.message : "خطأ في الصورة");
           })
           .finally(() => setImageLoading(false));
       }
@@ -139,14 +160,45 @@ export default function Home() {
     setImageUrl(null);
     setImageError(null);
     setErrorMessage(null);
+    setCurrentStoryId(null);
     setPhase("chat");
+  }
+
+  function handleOpenLibrary() {
+    setPhase("library");
+  }
+
+  function handlePickFromLibrary(saved: SavedStory) {
+    setStory({
+      title: saved.title,
+      paragraphs: saved.paragraphs,
+      imagePrompt: saved.imagePrompt,
+    });
+    setImageUrl(saved.imageUrl);
+    setImageLoading(false);
+    setImageError(null);
+    setCurrentStoryId(saved.id);
+    setPhase("story");
   }
 
   return (
     <main className="app">
+      <div className="top-bar">
+        <ThemeToggle />
+        {phase !== "library" && (
+          <button
+            type="button"
+            className="library-btn"
+            onClick={handleOpenLibrary}
+          >
+            📚 مكتبتي
+          </button>
+        )}
+      </div>
+
       {phase === "chat" && (
         <section className="chat-stage">
-          <h1 className="title">📖 Story Builder</h1>
+          <h1 className="title">📖 صانع القصص</h1>
           <StoryFriend question={currentQuestion} thinking={thinking} />
           <ChatInput
             value={draft}
@@ -170,17 +222,20 @@ export default function Home() {
           imageLoading={imageLoading}
           imageError={imageError}
           onStartOver={handleStartOver}
-          onChange={handleStartOver}
         />
+      )}
+
+      {phase === "library" && (
+        <Library onPick={handlePickFromLibrary} onBack={handleStartOver} />
       )}
 
       {phase === "error" && (
         <section>
-          <h1 className="title">📖 Story Builder</h1>
+          <h1 className="title">📖 صانع القصص</h1>
           <p className="error-text">⚠️ {errorMessage}</p>
           <div className="actions">
             <button type="button" className="btn" onClick={handleStartOver}>
-              Try again
+              حاول مرة أخرى
             </button>
           </div>
         </section>
